@@ -1,0 +1,345 @@
+<div class="interval-container" [class.fullscreen]="isFullscreen">
+  <!-- Setup Phase -->
+  <div class="interval-setup" *ngIf="showSetup()">
+    <div class="setup-header">
+      <h1 class="interval-title">Interval Timer</h1>
+      <div class="header-controls">
+        <button 
+          mat-icon-button 
+          matTooltip="Go Home"
+          (click)="goHome()"
+          class="home-btn">
+          <mat-icon>home</mat-icon>
+        </button>
+        
+        <button 
+          mat-icon-button 
+          [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+          (click)="toggleFullscreen()"
+          class="fullscreen-btn">
+          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Preset Workouts -->
+    <div class="presets-section">
+      <h3>Popular Workouts</h3>
+      <div class="preset-grid">
+        <mat-card 
+          *ngFor="let preset of intervalPresets; trackBy: trackByPreset"
+          (click)="selectPreset(preset)"
+          [class.selected]="selectedPreset() === preset"
+          class="preset-card">
+          <mat-card-header>
+            <mat-card-title>{{ preset.name }}</mat-card-title>
+            <mat-card-subtitle>{{ preset.description }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="preset-details">
+              <span class="preset-cycles">{{ preset.cycles }} cycles</span>
+              <span class="preset-duration">{{ getTotalWorkoutTime() }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Custom Setup -->
+    <div class="custom-setup-section">
+      <h3>Custom Interval</h3>
+      
+      <div class="setup-grid">
+        <!-- Work Time -->
+        <mat-card class="setup-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon color="warn">fitness_center</mat-icon>
+              Work Time
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="time-inputs">
+              <mat-form-field appearance="outline" class="time-input">
+                <mat-label>Minutes</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  min="0" 
+                  max="60"
+                  [ngModel]="workMinutes()"
+                  (ngModelChange)="workMinutes.set($event)">
+              </mat-form-field>
+              
+              <span class="time-separator">:</span>
+              
+              <mat-form-field appearance="outline" class="time-input">
+                <mat-label>Seconds</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  min="0" 
+                  max="59"
+                  [ngModel]="workSeconds()"
+                  (ngModelChange)="workSeconds.set($event)">
+              </mat-form-field>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Rest Time -->
+        <mat-card class="setup-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon color="primary">self_improvement</mat-icon>
+              Rest Time
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="time-inputs">
+              <mat-form-field appearance="outline" class="time-input">
+                <mat-label>Minutes</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  min="0" 
+                  max="60"
+                  [ngModel]="restMinutes()"
+                  (ngModelChange)="restMinutes.set($event)">
+              </mat-form-field>
+              
+              <span class="time-separator">:</span>
+              
+              <mat-form-field appearance="outline" class="time-input">
+                <mat-label>Seconds</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  min="0" 
+                  max="59"
+                  [ngModel]="restSeconds()"
+                  (ngModelChange)="restSeconds.set($event)">
+              </mat-form-field>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Cycles -->
+        <mat-card class="setup-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>repeat</mat-icon>
+              Cycles
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field appearance="outline" class="cycles-input">
+              <mat-label>Total Cycles</mat-label>
+              <input 
+                matInput 
+                type="number" 
+                min="1" 
+                max="50"
+                [ngModel]="totalCycles()"
+                (ngModelChange)="totalCycles.set($event)">
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <button 
+        mat-raised-button 
+        color="primary"
+        (click)="setupCustomInterval()"
+        class="start-custom-btn">
+        <mat-icon>play_arrow</mat-icon>
+        Start Custom Interval
+      </button>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="keyboard-shortcuts">
+      <div class="shortcuts-title">Keyboard Shortcuts:</div>
+      <div class="shortcuts-list">
+        <span class="shortcut"><kbd>Space</kbd> Start Timer</span>
+        <span class="shortcut"><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Running Timer Phase -->
+  <div class="interval-main" *ngIf="!showSetup()">
+    <div class="timer-header">
+      <h1 class="interval-title">Interval Timer</h1>
+      <div class="header-controls">
+        <button 
+          mat-icon-button 
+          [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+          (click)="toggleFullscreen()"
+          class="fullscreen-btn">
+          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+        
+        <button 
+          mat-icon-button 
+          matTooltip="Settings"
+          class="settings-btn">
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Workout Progress -->
+    <div class="workout-progress" *ngIf="!isFullscreen">
+      <div class="progress-header">
+        <span>Cycle {{ intervalState().currentCycle }} of {{ intervalState().totalCycles }}</span>
+        <span>{{ roundProgress(totalProgress()) }}% Complete</span>
+      </div>
+      <mat-progress-bar 
+        [value]="totalProgress()"
+        color="accent"
+        class="total-progress">
+      </mat-progress-bar>
+    </div>
+
+    <!-- Current Phase Display -->
+    <div class="phase-display" 
+         [class.work-phase]="intervalState().isWorkPhase"
+         [class.rest-phase]="!intervalState().isWorkPhase"
+         [class.completed]="isCompleted()">
+      
+      <div class="phase-header">
+        <mat-icon [color]="getPhaseColor()" class="phase-icon">{{ getPhaseIcon() }}</mat-icon>
+        <h2 class="phase-title">{{ getCurrentPhaseType() }} Phase</h2>
+      </div>
+
+      <!-- Phase Progress Bar -->
+      <div class="phase-progress">
+        <mat-progress-bar 
+          [value]="currentPhaseProgress()"
+          [color]="getPhaseColor()"
+          class="phase-progress-bar">
+        </mat-progress-bar>
+      </div>
+
+      <!-- Time Display -->
+      <div class="time-display-section">
+        <app-time-display 
+          [time]="formatTime(intervalState().timeRemaining)"
+          [status]="getPhaseStatus()"
+          size="large">
+        </app-time-display>
+      </div>
+
+      <!-- Phase Info -->
+      <div class="phase-info" *ngIf="!isFullscreen && !isCompleted()">
+        <div class="info-item">
+          <span class="info-label">Next:</span>
+          <span class="info-value">
+            {{ intervalState().isWorkPhase ? 'Rest' : (intervalState().currentCycle < intervalState().totalCycles ? 'Work' : 'Complete') }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="controls-section">
+      <app-control-buttons
+        [isRunning]="isRunning()"
+        layout="horizontal"
+        (action)="onTimerAction($event)"
+        [showLap]="false">
+      </app-control-buttons>
+      
+      <button 
+        *ngIf="!isCompleted() && !isFullscreen"
+        mat-stroked-button
+        (click)="skipPhase()"
+        class="skip-btn">
+        <mat-icon>skip_next</mat-icon>
+        Skip Phase
+      </button>
+    </div>
+
+    <!-- Workout Summary -->
+    <div class="workout-summary" *ngIf="!isFullscreen">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Workout Summary</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">Total Work Time:</span>
+              <span class="summary-value">{{ formatTime(intervalState().totalWorkTime) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Total Rest Time:</span>
+              <span class="summary-value">{{ formatTime(intervalState().totalRestTime) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Cycles Completed:</span>
+              <span class="summary-value">{{ intervalState().currentCycle - (intervalState().isWorkPhase ? 1 : 0) }} / {{ intervalState().totalCycles }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="keyboard-shortcuts" *ngIf="!isFullscreen">
+      <div class="shortcuts-title">Keyboard Shortcuts:</div>
+      <div class="shortcuts-list">
+        <span class="shortcut"><kbd>Space</kbd> Start/Stop</span>
+        <span class="shortcut"><kbd>R</kbd> Reset</span>
+        <span class="shortcut"><kbd>S</kbd> Skip Phase</span>
+        <span class="shortcut"><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion State -->
+  <div class="completion-state" *ngIf="isCompleted()">
+    <div class="completion-content">
+      <mat-icon class="completion-icon">emoji_events</mat-icon>
+      <h2>Workout Complete!</h2>
+      <p>Great job finishing your interval training session.</p>
+      
+      <div class="completion-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ intervalState().totalCycles }}</span>
+          <span class="stat-label">Cycles</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ formatTime(intervalState().totalWorkTime + intervalState().totalRestTime) }}</span>
+          <span class="stat-label">Total Time</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ formatTime(intervalState().totalWorkTime) }}</span>
+          <span class="stat-label">Work Time</span>
+        </div>
+      </div>
+      
+      <div class="completion-actions">
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="onTimerAction({ action: 'reset' })"
+          class="restart-btn">
+          <mat-icon>refresh</mat-icon>
+          Start New Session
+        </button>
+        
+        <button 
+          mat-stroked-button
+          (click)="goHome()"
+          class="home-btn">
+          <mat-icon>home</mat-icon>
+          Go Home
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

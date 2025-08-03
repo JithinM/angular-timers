@@ -1,0 +1,159 @@
+<div class="stopwatch-container" [class.fullscreen]="isFullscreen">
+  <div class="stopwatch-header">
+    <h1 class="stopwatch-title">Stopwatch</h1>
+    <div class="header-controls">
+      <button 
+        mat-icon-button 
+        [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+        (click)="toggleFullscreen()"
+        class="fullscreen-btn">
+        <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button 
+        matTooltip="Settings"
+        class="settings-btn">
+        <mat-icon>settings</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button 
+        matTooltip="Export Data"
+        (click)="exportLaps()"
+        class="export-btn"
+        [disabled]="laps().length === 0">
+        <mat-icon>download</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="stopwatch-main">
+    <!-- Time Display -->
+    <div class="time-display-section">
+      <app-time-display 
+        [timeMs]="timerService.stopwatchState().timeElapsed"
+        [status]="timerService.stopwatchState().isRunning ? 'running' : 'stopped'"
+        size="large"
+        [showMilliseconds]="showMilliseconds">
+      </app-time-display>
+      
+      <!-- Current Lap Time (when running) -->
+      <div class="current-lap" *ngIf="timerService.stopwatchState().isRunning && laps().length > 0">
+        <span class="current-lap-label">Current Lap:</span>
+        <span class="current-lap-time">{{ formatTime(currentLapTime()) }}</span>
+      </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="controls-section">
+      <app-control-buttons
+        [isRunning]="timerService.stopwatchState().isRunning"
+        [hasTime]="timerService.stopwatchState().timeElapsed > 0"
+        layout="horizontal"
+        (actionClick)="onTimerAction($event)"
+        showLap="true">
+      </app-control-buttons>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="keyboard-shortcuts" *ngIf="!isFullscreen">
+      <div class="shortcuts-title">Keyboard Shortcuts:</div>
+      <div class="shortcuts-list">
+        <span class="shortcut"><kbd>Space</kbd> Start/Stop</span>
+        <span class="shortcut"><kbd>R</kbd> Reset</span>
+        <span class="shortcut"><kbd>L</kbd> Lap</span>
+        <span class="shortcut"><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Laps Section -->
+  <div class="laps-section" *ngIf="laps().length > 0">
+    <div class="laps-header">
+      <h3>Lap Times</h3>
+      <div class="laps-controls">
+        <button 
+          mat-stroked-button 
+          (click)="clearLaps()"
+          class="clear-laps-btn">
+          <mat-icon>clear_all</mat-icon>
+          Clear Laps
+        </button>
+        
+        <mat-slide-toggle 
+          [(ngModel)]="showMilliseconds"
+          class="ms-toggle">
+          Show Milliseconds
+        </mat-slide-toggle>
+      </div>
+    </div>
+
+    <div class="laps-content">
+      <!-- Laps Statistics -->
+      <div class="laps-stats" *ngIf="laps().length > 1">
+        <div class="stat-item">
+          <span class="stat-label">Best Lap:</span>
+          <span class="stat-value best-lap">{{ formatTime(fastestLap()) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Worst Lap:</span>
+          <span class="stat-value worst-lap">{{ formatTime(slowestLap()) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Average:</span>
+          <span class="stat-value">{{ formatTime(averageLap()) }}</span>
+        </div>
+      </div>
+
+      <!-- Laps List -->
+      <div class="laps-list">
+        <div class="laps-list-header">
+          <span class="lap-number-header">Lap</span>
+          <span class="lap-time-header">Lap Time</span>
+          <span class="total-time-header">Total Time</span>
+          <span class="diff-header">+/-</span>
+        </div>
+        
+        <div class="laps-list-body">
+          <div 
+            *ngFor="let lap of laps(); trackBy: trackByLapNumber"
+            class="lap-row"
+            [class.best-lap]="lap.time === fastestLap()"
+            [class.worst-lap]="lap.time === slowestLap() && laps().length > 2">
+            
+            <span class="lap-number">{{ lap.lapNumber }}</span>
+            
+            <span class="lap-time">
+              {{ formatTime(lap.time) }}
+            </span>
+            
+            <span class="total-time">
+              {{ formatTime(lap.totalTime) }}
+            </span>
+            
+            <span 
+              class="lap-diff"
+              [class.faster]="lap.diff < 0"
+              [class.slower]="lap.diff > 0">
+              {{ lap.diff === 0 ? '-' : (lap.diff > 0 ? '+' : '') + formatTime(Math.abs(lap.diff)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="laps().length === 0 && !timerService.stopwatchState().isRunning">
+    <mat-icon class="empty-icon">timer</mat-icon>
+    <h3>Ready to Start</h3>
+    <p>Press <kbd>Space</kbd> or click the Start button to begin timing.</p>
+  </div>
+</div>
+
+<!-- Ad Slots for Non-Fullscreen Mode -->
+<div class="stopwatch-ads" *ngIf="!isFullscreen">
+  <app-ad-slot type="rectangle" class="stopwatch-ad-primary"></app-ad-slot>
+  <app-ad-slot type="banner" class="stopwatch-ad-secondary"></app-ad-slot>
+</div>

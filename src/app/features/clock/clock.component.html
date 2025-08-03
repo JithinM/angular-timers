@@ -1,0 +1,327 @@
+<div class="clock-container" [class.fullscreen]="isFullscreen()">
+  <!-- Header -->
+  <div class="clock-header">
+    <h1 class="clock-title">World Clock</h1>
+    <div class="header-controls">
+      <button mat-icon-button 
+              (click)="toggleSettings()" 
+              [class.active]="showSettings()"
+              title="Settings">
+        <mat-icon>settings</mat-icon>
+      </button>
+      <button mat-icon-button (click)="toggleFullscreen()" title="Toggle Fullscreen">
+        <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  @if (showSettings()) {
+    <div class="settings-panel">
+      <mat-card>
+        <mat-card-title>
+          <mat-icon>tune</mat-icon>
+          Clock Settings
+        </mat-card-title>
+        <mat-card-content>
+          <!-- Display Options -->
+          <div class="settings-section">
+            <h4>Display Options</h4>
+            <div class="settings-grid">
+              <mat-slide-toggle 
+                [(ngModel)]="format24Hour"
+                (ngModelChange)="toggleFormat()">
+                24-Hour Format
+              </mat-slide-toggle>
+              
+              <mat-slide-toggle 
+                [(ngModel)]="showSeconds"
+                (ngModelChange)="toggleSeconds()">
+                Show Seconds
+              </mat-slide-toggle>
+              
+              <mat-slide-toggle 
+                [(ngModel)]="showDate"
+                (ngModelChange)="toggleDate()">
+                Show Date
+              </mat-slide-toggle>
+              
+              <mat-slide-toggle 
+                [(ngModel)]="showTimezone"
+                (ngModelChange)="toggleTimezoneDisplay()">
+                Show Timezone
+              </mat-slide-toggle>
+            </div>
+          </div>
+
+          <!-- Timezone Management -->
+          <div class="settings-section">
+            <h4>Timezone Management</h4>
+            
+            <!-- Add Timezone -->
+            <div class="timezone-selector">
+              <mat-form-field appearance="outline" class="timezone-select">
+                <mat-label>Add Timezone</mat-label>
+                <mat-select #timezoneSelect>
+                  @for (region of timezoneRegions() | keyvalue; track region.key) {
+                    <mat-optgroup [label]="region.key">
+                      @for (timezone of region.value; track timezone.id) {
+                        @if (!selectedTimezones().includes(timezone.timezone)) {
+                          <mat-option 
+                            [value]="timezone.timezone"
+                            (onSelectionChange)="addTimezone(timezone.timezone); timezoneSelect.value = ''">
+                            {{ timezone.city }}, {{ timezone.country }}
+                          </mat-option>
+                        }
+                      }
+                    </mat-optgroup>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Selected Timezones -->
+            <div class="selected-timezones">
+              <h5>Selected Timezones</h5>
+              <div class="timezone-chips">
+                @for (timezone of displayedTimezones(); track timezone.id) {
+                  <mat-chip-set>
+                    <mat-chip 
+                      [class.primary-chip]="timezone.isPrimary"
+                      [removable]="selectedTimezones().length > 1"
+                      (removed)="removeTimezone(timezone.timezone)">
+                      <mat-icon 
+                        *ngIf="timezone.isPrimary" 
+                        matChipAvatar>
+                        star
+                      </mat-icon>
+                      {{ timezone.name }}
+                      <button 
+                        matChipRemove 
+                        *ngIf="selectedTimezones().length > 1"
+                        aria-label="Remove timezone">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    </mat-chip>
+                  </mat-chip-set>
+                }
+              </div>
+            </div>
+
+            <!-- Primary Timezone -->
+            <div class="primary-timezone-selector">
+              <mat-form-field appearance="outline">
+                <mat-label>Primary Timezone</mat-label>
+                <mat-select 
+                  [value]="primaryTimezone()"
+                  (selectionChange)="setPrimaryTimezone($event.value)">
+                  @for (timezone of displayedTimezones(); track timezone.id) {
+                    <mat-option [value]="timezone.timezone">
+                      {{ timezone.name }}
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Settings Actions -->
+          <div class="settings-actions">
+            <button mat-stroked-button (click)="resetToDefaults()">
+              <mat-icon>restore</mat-icon>
+              Reset to Defaults
+            </button>
+            <button mat-stroked-button (click)="toggleSettings()">
+              <mat-icon>close</mat-icon>
+              Close Settings
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Primary Clock Display -->
+  @if (primaryTimezoneInfo(); as primary) {
+    <div class="primary-clock" [class.fullscreen-clock]="isFullscreen()">
+      <div class="primary-time-display">
+        <div class="time-text" [class.large-text]="isFullscreen()">
+          {{ primary.displayTime }}
+        </div>
+        
+        @if (showDate()) {
+          <div class="date-text">
+            {{ primary.displayDate }}
+          </div>
+        }
+        
+        @if (showTimezone()) {
+          <div class="timezone-info">
+            <span class="timezone-name">{{ primary.name }}</span>
+            <span class="timezone-offset">{{ primary.offset }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- World Clock Grid -->
+  @if (displayedTimezones().length > 1 && !isFullscreen()) {
+    <div class="world-clock-grid">
+      @for (timezone of displayedTimezones(); track timezone.id) {
+        @if (!timezone.isPrimary) {
+          <mat-card class="timezone-card">
+            <mat-card-header>
+              <mat-card-title class="timezone-name">
+                {{ timezone.name }}
+              </mat-card-title>
+              <mat-card-subtitle class="timezone-country">
+                {{ timezone.country }}
+              </mat-card-subtitle>
+              <button 
+                mat-icon-button 
+                mat-card-avatar
+                (click)="setPrimaryTimezone(timezone.timezone)"
+                title="Set as primary timezone">
+                <mat-icon>star_border</mat-icon>
+              </button>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <div class="timezone-time">
+                {{ timezone.displayTime }}
+              </div>
+              
+              @if (showDate()) {
+                <div class="timezone-date">
+                  {{ timezone.displayDate }}
+                </div>
+              }
+              
+              @if (showTimezone()) {
+                <div class="timezone-offset">
+                  {{ timezone.offset }}
+                </div>
+              }
+            </mat-card-content>
+            
+            <mat-card-actions>
+              <button 
+                mat-button
+                [matMenuTriggerFor]="timezoneMenu"
+                [matMenuTriggerData]="{ timezone: timezone }">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+      }
+    </div>
+  }
+
+  <!-- Timezone Context Menu -->
+  <mat-menu #timezoneMenu="matMenu">
+    <ng-template matMenuContent let-timezone="timezone">
+      <button mat-menu-item (click)="setPrimaryTimezone(timezone.timezone)">
+        <mat-icon>star</mat-icon>
+        <span>Set as Primary</span>
+      </button>
+      <button 
+        mat-menu-item 
+        (click)="removeTimezone(timezone.timezone)"
+        [disabled]="selectedTimezones().length <= 1">
+        <mat-icon>delete</mat-icon>
+        <span>Remove</span>
+      </button>
+    </ng-template>
+  </mat-menu>
+
+  <!-- Quick Timezone Presets -->
+  @if (!showSettings() && !isFullscreen()) {
+    <div class="timezone-presets">
+      <mat-card>
+        <mat-card-title>Quick Add</mat-card-title>
+        <mat-card-content>
+          <div class="preset-buttons">
+            <button 
+              mat-stroked-button 
+              *ngFor="let preset of [
+                { name: 'New York', timezone: 'America/New_York' },
+                { name: 'London', timezone: 'Europe/London' },
+                { name: 'Tokyo', timezone: 'Asia/Tokyo' },
+                { name: 'Sydney', timezone: 'Australia/Sydney' },
+                { name: 'Dubai', timezone: 'Asia/Dubai' },
+                { name: 'Los Angeles', timezone: 'America/Los_Angeles' }
+              ]"
+              (click)="addTimezone(preset.timezone)"
+              [disabled]="selectedTimezones().includes(preset.timezone)">
+              + {{ preset.name }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Digital Clock Info -->
+  @if (!isFullscreen()) {
+    <div class="clock-info">
+      <mat-card>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <mat-icon>schedule</mat-icon>
+              <div class="info-text">
+                <span class="info-label">Format</span>
+                <span class="info-value">{{ format24Hour() ? '24-Hour' : '12-Hour' }}</span>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <mat-icon>public</mat-icon>
+              <div class="info-text">
+                <span class="info-label">Timezones</span>
+                <span class="info-value">{{ selectedTimezones().length }}</span>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <mat-icon>update</mat-icon>
+              <div class="info-text">
+                <span class="info-label">Updates</span>
+                <span class="info-value">Every Second</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Fullscreen Exit Button -->
+  @if (isFullscreen()) {
+    <div class="fullscreen-exit">
+      <button mat-fab (click)="exitFullscreen()" title="Exit Fullscreen">
+        <mat-icon>fullscreen_exit</mat-icon>
+      </button>
+    </div>
+  }
+
+  <!-- Keyboard Shortcuts Info -->
+  @if (!isFullscreen() && !showSettings()) {
+    <div class="keyboard-shortcuts">
+      <div class="shortcuts-title">Keyboard Shortcuts</div>
+      <div class="shortcuts-list">
+        <div class="shortcut">
+          <kbd>F</kbd> Toggle Fullscreen
+        </div>
+        <div class="shortcut">
+          <kbd>S</kbd> Toggle Settings
+        </div>
+        <div class="shortcut">
+          <kbd>Esc</kbd> Exit Fullscreen
+        </div>
+      </div>
+    </div>
+  }
+</div>

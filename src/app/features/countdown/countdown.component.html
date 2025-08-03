@@ -1,0 +1,230 @@
+<div class="countdown-container" [class.fullscreen]="isFullscreen">
+  <!-- Setup Phase -->
+  <div class="countdown-setup" *ngIf="showSetup()">
+    <div class="setup-header">
+      <h1 class="countdown-title">Countdown Timer</h1>
+      <div class="header-controls">
+        <button 
+          mat-icon-button 
+          matTooltip="Go Home"
+          (click)="goHome()"
+          class="home-btn">
+          <mat-icon>home</mat-icon>
+        </button>
+        
+        <button 
+          mat-icon-button 
+          [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+          (click)="toggleFullscreen()"
+          class="fullscreen-btn">
+          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Start Presets -->
+    <div class="quick-start-section">
+      <h3>Quick Start</h3>
+      <div class="preset-chips">
+        <mat-chip-listbox>
+          <mat-chip-option 
+            *ngFor="let preset of presetTimers; trackBy: trackByPreset"
+            (click)="selectPreset(preset)"
+            [selected]="selectedPreset() === preset"
+            class="preset-chip">
+            <span class="preset-name">{{ preset.name }}</span>
+            <span class="preset-description" *ngIf="preset.description">{{ preset.description }}</span>
+          </mat-chip-option>
+        </mat-chip-listbox>
+      </div>
+    </div>
+
+    <!-- Custom Time Input -->
+    <div class="custom-time-section">
+      <h3>Custom Time</h3>
+      <div class="time-inputs">
+        <mat-form-field appearance="outline" class="time-input">
+          <mat-label>Minutes</mat-label>
+          <input 
+            matInput 
+            type="number" 
+            min="0" 
+            max="999"
+            [ngModel]="customMinutes()"
+            (ngModelChange)="customMinutes.set($event)"
+            placeholder="5">
+        </mat-form-field>
+        
+        <span class="time-separator">:</span>
+        
+        <mat-form-field appearance="outline" class="time-input">
+          <mat-label>Seconds</mat-label>
+          <input 
+            matInput 
+            type="number" 
+            min="0" 
+            max="59"
+            [ngModel]="customSeconds()"
+            (ngModelChange)="customSeconds.set($event)"
+            placeholder="00">
+        </mat-form-field>
+        
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="startCustomTimer()"
+          class="start-custom-btn">
+          <mat-icon>play_arrow</mat-icon>
+          Start Timer
+        </button>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="keyboard-shortcuts">
+      <div class="shortcuts-title">Keyboard Shortcuts:</div>
+      <div class="shortcuts-list">
+        <span class="shortcut"><kbd>Space</kbd> Start Timer</span>
+        <span class="shortcut"><kbd>1-5</kbd> Quick Start (5-25 min)</span>
+        <span class="shortcut"><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Running Timer Phase -->
+  <div class="countdown-main" *ngIf="!showSetup()">
+    <div class="timer-header">
+      <h1 class="countdown-title">Countdown Timer</h1>
+      <div class="header-controls">
+        <button 
+          mat-icon-button 
+          matTooltip="Add to Favorites"
+          (click)="addCurrentToFavorites()"
+          class="favorite-btn">
+          <mat-icon>favorite_border</mat-icon>
+        </button>
+        
+        <button 
+          mat-icon-button 
+          [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+          (click)="toggleFullscreen()"
+          class="fullscreen-btn">
+          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+        
+        <button 
+          mat-icon-button 
+          matTooltip="Settings"
+          class="settings-btn">
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <mat-progress-bar
+        [value]="progress()"
+        [color]="showCriticalAlert() ? 'warn' : 'primary'"
+        class="countdown-progress">
+      </mat-progress-bar>
+      <div class="progress-text">
+        {{ formatTime(timerState().initialTime - timerState().timeRemaining) }} / {{ formatTime(timerState().initialTime) }}
+      </div>
+    </div>
+
+    <!-- Time Display -->
+    <div class="time-display-section" 
+         [class.warning-state]="showUrgentAlert()"
+         [class.critical-state]="showCriticalAlert()"
+         [class.finished-state]="isFinished()">
+      <app-time-display
+        [time]="formatTime(timeRemaining())"
+        [status]="getTimeStatus()"
+        size="large">
+      </app-time-display>
+      
+      <!-- Status Message -->
+      <div class="status-message" *ngIf="isFinished()">
+        <mat-icon class="status-icon">check_circle</mat-icon>
+        <span>Timer Completed!</span>
+      </div>
+      
+      <div class="status-message warning" *ngIf="showUrgentAlert() && !isFinished()">
+        <mat-icon class="status-icon">warning</mat-icon>
+        <span>Less than 1 minute remaining</span>
+      </div>
+      
+      <div class="status-message critical" *ngIf="showCriticalAlert() && !isFinished()">
+        <mat-icon class="status-icon">error</mat-icon>
+        <span>Final countdown!</span>
+      </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="controls-section">
+      <app-control-buttons
+        [isRunning]="isRunning()"
+        layout="horizontal"
+        (action)="onTimerAction($event)"
+        [showLap]="false">
+      </app-control-buttons>
+    </div>
+
+    <!-- Timer Info -->
+    <div class="timer-info" *ngIf="!isFullscreen">
+      <div class="info-item">
+        <span class="info-label">Started:</span>
+        <span class="info-value">{{ formatTime(timerState().initialTime) }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Elapsed:</span>
+        <span class="info-value">{{ formatTime(timerState().initialTime - timerState().timeRemaining) }}</span>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="keyboard-shortcuts" *ngIf="!isFullscreen">
+      <div class="shortcuts-title">Keyboard Shortcuts:</div>
+      <div class="shortcuts-list">
+        <span class="shortcut"><kbd>Space</kbd> Start/Stop</span>
+        <span class="shortcut"><kbd>R</kbd> Reset</span>
+        <span class="shortcut"><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State for Completed Timer -->
+  <div class="completion-state" *ngIf="isFinished() && !showSetup()">
+    <div class="completion-content">
+      <mat-icon class="completion-icon">timer_off</mat-icon>
+      <h2>Time's Up!</h2>
+      <p>Your countdown timer has finished.</p>
+      
+      <div class="completion-actions">
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="resetTimer()"
+          class="restart-btn">
+          <mat-icon>refresh</mat-icon>
+          Start New Timer
+        </button>
+        
+        <button 
+          mat-stroked-button
+          (click)="goHome()"
+          class="home-btn">
+          <mat-icon>home</mat-icon>
+          Go Home
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Visual Alert Overlay for Critical State -->
+<div class="alert-overlay"
+     *ngIf="showCriticalAlert() && !isFinished()"
+     [class.pulse]="isRunning()">
+</div>

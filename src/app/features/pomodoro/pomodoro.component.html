@@ -1,0 +1,354 @@
+<div class="pomodoro-container" [class.fullscreen]="isFullscreen()">
+  <!-- Setup Phase -->
+  @if (isSetupMode()) {
+    <div class="pomodoro-setup">
+      <!-- Header -->
+      <div class="setup-header">
+        <h1 class="pomodoro-title">Pomodoro Timer</h1>
+        <div class="header-controls">
+          <button mat-icon-button (click)="toggleFullscreen()" title="Toggle Fullscreen (F)">
+            <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Presets Section -->
+      <div class="presets-section">
+        <h3>Quick Start Presets</h3>
+        <div class="preset-grid">
+          @for (preset of presets; track preset.name) {
+            <mat-card 
+              class="preset-card"
+              [class.selected]="selectedPreset()?.name === preset.name"
+              (click)="selectPreset(preset)">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>{{ preset.icon }}</mat-icon>
+                <mat-card-title>{{ preset.name }}</mat-card-title>
+                <mat-card-subtitle>{{ preset.description }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="preset-details">
+                  <div class="preset-times">
+                    <span>{{ preset.workTime }}m work</span>
+                    <span>{{ preset.shortBreak }}m short</span>
+                    <span>{{ preset.longBreak }}m long</span>
+                  </div>
+                  <div class="preset-sessions">
+                    {{ preset.sessions }} sessions
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </div>
+
+      <!-- Custom Setup Section -->
+      <div class="custom-setup-section">
+        <h3>Custom Configuration</h3>
+        <div class="setup-grid">
+          <!-- Work Time -->
+          <mat-card class="setup-card">
+            <mat-card-title>
+              <mat-icon>work</mat-icon>
+              Focus Time
+            </mat-card-title>
+            <mat-card-content>
+              <mat-form-field appearance="outline">
+                <mat-label>Minutes</mat-label>
+                <input matInput 
+                       type="number" 
+                       min="1" 
+                       max="120"
+                       [(ngModel)]="customWorkTime"
+                       class="time-input">
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Short Break Time -->
+          <mat-card class="setup-card">
+            <mat-card-title>
+              <mat-icon>coffee</mat-icon>
+              Short Break
+            </mat-card-title>
+            <mat-card-content>
+              <mat-form-field appearance="outline">
+                <mat-label>Minutes</mat-label>
+                <input matInput 
+                       type="number" 
+                       min="1" 
+                       max="30"
+                       [(ngModel)]="customShortBreak"
+                       class="time-input">
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Long Break Time -->
+          <mat-card class="setup-card">
+            <mat-card-title>
+              <mat-icon>restaurant</mat-icon>
+              Long Break
+            </mat-card-title>
+            <mat-card-content>
+              <mat-form-field appearance="outline">
+                <mat-label>Minutes</mat-label>
+                <input matInput 
+                       type="number" 
+                       min="1" 
+                       max="60"
+                       [(ngModel)]="customLongBreak"
+                       class="time-input">
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Sessions Until Long Break -->
+          <mat-card class="setup-card">
+            <mat-card-title>
+              <mat-icon>repeat</mat-icon>
+              Sessions
+            </mat-card-title>
+            <mat-card-content>
+              <mat-form-field appearance="outline">
+                <mat-label>Sessions until long break</mat-label>
+                <input matInput 
+                       type="number" 
+                       min="2" 
+                       max="8"
+                       [(ngModel)]="customSessions"
+                       class="sessions-input">
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <button mat-raised-button 
+                color="primary" 
+                class="start-custom-btn"
+                (click)="startCustomPomodoro()">
+          <mat-icon>play_arrow</mat-icon>
+          Start Custom Pomodoro
+        </button>
+      </div>
+    </div>
+  } @else {
+    <!-- Running Timer Display -->
+    <div class="pomodoro-main">
+      <!-- Header -->
+      <div class="timer-header">
+        <h1 class="pomodoro-title">Pomodoro Timer</h1>
+        <div class="header-controls">
+          <button mat-icon-button (click)="toggleFullscreen()" title="Toggle Fullscreen (F)">
+            <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          </button>
+          <button mat-icon-button (click)="resetTimer()" title="Reset Timer (R)">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Overall Progress -->
+      <div class="overall-progress">
+        <div class="progress-header">
+          <span>Session {{ pomodoroState().currentSession }} of {{ pomodoroState().sessionsUntilLongBreak * 2 }}</span>
+          <span>{{ overallProgress() | number:'1.0-0' }}% Complete</span>
+        </div>
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="overallProgress()"
+          class="total-progress">
+        </mat-progress-bar>
+      </div>
+
+      <!-- Session Display -->
+      <div class="session-display" 
+           [class.work-session]="pomodoroState().currentSessionType === 'work'"
+           [class.break-session]="pomodoroState().currentSessionType !== 'work'"
+           [class.completed]="pomodoroState().isCompleted">
+        
+        <div class="session-header">
+          <div class="session-icon">
+            <mat-icon>{{ sessionTypeIcon() }}</mat-icon>
+          </div>
+          <h2 class="session-title">{{ sessionTypeName() }}</h2>
+        </div>
+
+        <!-- Current Session Progress -->
+        <div class="session-progress">
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="currentPhaseProgress()"
+            class="session-progress-bar">
+          </mat-progress-bar>
+        </div>
+
+        <!-- Time Display -->
+        <div class="time-display-section">
+          <app-time-display 
+            [time]="formattedTime()" 
+            [size]="'large'">
+          </app-time-display>
+        </div>
+
+        <!-- Session Info -->
+        <div class="session-info">
+          <div class="info-item">
+            <span class="info-label">Current Session:</span>
+            <span class="info-value">{{ pomodoroState().currentSession }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Completed:</span>
+            <span class="info-value">{{ pomodoroState().completedSessions }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Status:</span>
+            <span class="info-value">{{ pomodoroStatus() | titlecase }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-section">
+        <!-- Primary action button (Start/Stop) -->
+        <button
+          mat-fab
+          color="primary"
+          class="primary-button"
+          (click)="toggleTimer()"
+          [disabled]="pomodoroState().isCompleted">
+          <mat-icon>{{ pomodoroStatus() === 'running' ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+
+        <!-- Secondary buttons -->
+        <div class="secondary-buttons">
+          <button mat-raised-button
+                  color="warn"
+                  (click)="resetTimer()"
+                  class="control-btn">
+            <mat-icon>restart_alt</mat-icon>
+            Reset
+          </button>
+
+          @if (!pomodoroState().isCompleted) {
+            <button mat-stroked-button
+                    class="control-btn skip-btn"
+                    (click)="skipSession()"
+                    title="Skip Session (S)">
+              <mat-icon>skip_next</mat-icon>
+              Skip Session
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Session Statistics -->
+      @if (pomodoroState().sessionHistory.length > 0) {
+        <div class="session-stats">
+          <mat-card>
+            <mat-card-title>Session Statistics</mat-card-title>
+            <mat-card-content>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Total Time</span>
+                  <span class="stat-value">{{ getTotalTime() }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Productivity</span>
+                  <span class="stat-value">{{ getProductivityScore() | number:'1.0-0' }}%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Sessions</span>
+                  <span class="stat-value">{{ pomodoroState().sessionHistory.length }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Completion State -->
+  @if (pomodoroState().isCompleted) {
+    <div class="completion-state">
+      <div class="completion-content">
+        <mat-icon class="completion-icon">check_circle</mat-icon>
+        <h2>Pomodoro Session Complete!</h2>
+        <p>Congratulations! You've completed your Pomodoro session.</p>
+        
+        <div class="completion-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ pomodoroState().completedSessions }}</span>
+            <span class="stat-label">Sessions</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ getTotalTime() }}</span>
+            <span class="stat-label">Total Time</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ getProductivityScore() | number:'1.0-0' }}%</span>
+            <span class="stat-label">Productivity</span>
+          </div>
+        </div>
+
+        <div class="completion-actions">
+          <button mat-raised-button color="primary" (click)="resetTimer()">
+            <mat-icon>refresh</mat-icon>
+            Start New Session
+          </button>
+          <button mat-stroked-button (click)="exitFullscreen()" *ngIf="isFullscreen()">
+            <mat-icon>fullscreen_exit</mat-icon>
+            Exit Fullscreen
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Session History -->
+  @if (pomodoroState().sessionHistory.length > 0 && !isSetupMode()) {
+    <div class="session-history">
+      <mat-card>
+        <mat-card-title>Session History</mat-card-title>
+        <mat-card-content>
+          <div class="history-list">
+            @for (session of formatSessionHistory(); track $index) {
+              <div class="history-item">
+                <span class="history-session">{{ session.session }}</span>
+                <span class="history-type">{{ session.type }}</span>
+                <span class="history-duration">{{ session.duration }}</span>
+                <span class="history-time">{{ session.completedAt }}</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Keyboard Shortcuts -->
+  @if (!isFullscreen()) {
+    <div class="keyboard-shortcuts">
+      <div class="shortcuts-title">Keyboard Shortcuts</div>
+      <div class="shortcuts-list">
+        <div class="shortcut">
+          <kbd>Space</kbd> Play/Pause
+        </div>
+        <div class="shortcut">
+          <kbd>R</kbd> Reset
+        </div>
+        <div class="shortcut">
+          <kbd>S</kbd> Skip Session
+        </div>
+        <div class="shortcut">
+          <kbd>F</kbd> Fullscreen
+        </div>
+        <div class="shortcut">
+          <kbd>Esc</kbd> Exit Fullscreen
+        </div>
+      </div>
+    </div>
+  }
+</div>

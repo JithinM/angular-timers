@@ -1,0 +1,591 @@
+.countdown-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--mat-app-background-color);
+  position: relative;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: var(--mat-app-background-color);
+    padding: 2rem;
+
+    .countdown-setup,
+    .countdown-main {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .time-display-section {
+      margin-bottom: 3rem;
+    }
+
+    .controls-section {
+      margin-bottom: 2rem;
+    }
+  }
+}
+
+// Setup Phase Styles
+.countdown-setup {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 2rem;
+}
+
+.setup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mat-divider-color);
+
+  .countdown-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--mat-app-on-surface);
+  }
+
+  .header-controls {
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      &:hover {
+        background-color: var(--mat-app-surface-variant);
+      }
+    }
+  }
+}
+
+.quick-start-section {
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--mat-app-on-surface);
+  }
+
+  .preset-chips {
+    mat-chip-listbox {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .preset-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 60px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .preset-name {
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+
+      .preset-description {
+        font-size: 0.75rem;
+        color: var(--mat-app-on-surface-variant);
+        margin-top: 0.25rem;
+      }
+    }
+  }
+}
+
+.custom-time-section {
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--mat-app-on-surface);
+  }
+
+  .time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .time-input {
+      width: 120px;
+    }
+
+    .time-separator {
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--mat-app-on-surface-variant);
+      margin: 0 0.5rem;
+    }
+
+    .start-custom-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      height: 56px;
+      padding: 0 2rem;
+    }
+  }
+}
+
+// Running Timer Styles
+.countdown-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mat-divider-color);
+
+  .countdown-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--mat-app-on-surface);
+  }
+
+  .header-controls {
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      &:hover {
+        background-color: var(--mat-app-surface-variant);
+      }
+    }
+  }
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .countdown-progress {
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .progress-text {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--mat-app-on-surface-variant);
+    font-family: 'Roboto Mono', monospace;
+  }
+}
+
+.time-display-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+
+  // Warning state (last minute)
+  &.warning-state {
+    background: rgba(var(--mat-warn-rgb), 0.1);
+    border: 2px solid rgba(var(--mat-warn-rgb), 0.3);
+
+    .status-message.warning {
+      color: var(--mat-app-warn);
+    }
+  }
+
+  // Critical state (last 10 seconds)
+  &.critical-state {
+    background: rgba(var(--mat-error-rgb), 0.15);
+    border: 2px solid rgba(var(--mat-error-rgb), 0.4);
+    animation: pulse-critical 1s infinite;
+
+    .status-message.critical {
+      color: var(--mat-app-error);
+    }
+  }
+
+  // Finished state
+  &.finished-state {
+    background: rgba(var(--mat-primary-rgb), 0.1);
+    border: 2px solid rgba(var(--mat-primary-rgb), 0.3);
+
+    .status-message {
+      color: var(--mat-app-primary);
+    }
+  }
+
+  .status-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 1rem;
+
+    .status-icon {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+@keyframes pulse-critical {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+}
+
+.controls-section {
+  display: flex;
+  justify-content: center;
+}
+
+.timer-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--mat-app-surface-variant);
+  border-radius: 8px;
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .info-label {
+      font-size: 0.875rem;
+      color: var(--mat-app-on-surface-variant);
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--mat-app-on-surface);
+    }
+  }
+}
+
+.keyboard-shortcuts {
+  text-align: center;
+  margin-top: 1rem;
+
+  .shortcuts-title {
+    font-size: 0.875rem;
+    color: var(--mat-app-on-surface-variant);
+    margin-bottom: 0.5rem;
+  }
+
+  .shortcuts-list {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .shortcut {
+      font-size: 0.75rem;
+      color: var(--mat-app-on-surface-variant);
+
+      kbd {
+        background: var(--mat-app-surface-variant);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.75rem;
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+
+// Completion State
+.completion-state {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+
+  .completion-content {
+    max-width: 400px;
+
+    .completion-icon {
+      font-size: 4rem;
+      width: 4rem;
+      height: 4rem;
+      color: var(--mat-app-primary);
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--mat-app-on-surface);
+    }
+
+    p {
+      margin: 0 0 2rem 0;
+      font-size: 1rem;
+      color: var(--mat-app-on-surface-variant);
+    }
+
+    .completion-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 140px;
+      }
+    }
+  }
+}
+
+// Alert overlay for critical state
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(244, 67, 54, 0.1);
+  z-index: 50;
+  pointer-events: none;
+
+  &.pulse {
+    animation: alert-pulse 0.5s infinite alternate;
+  }
+}
+
+@keyframes alert-pulse {
+  0% {
+    background: rgba(244, 67, 54, 0.05);
+  }
+  100% {
+    background: rgba(244, 67, 54, 0.15);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .countdown-container {
+    padding: 0.5rem;
+
+    &.fullscreen {
+      padding: 1rem;
+    }
+  }
+
+  .setup-header,
+  .timer-header {
+    .countdown-title {
+      font-size: 1.5rem;
+    }
+
+    .header-controls {
+      gap: 0.25rem;
+    }
+  }
+
+  .preset-chips {
+    mat-chip-listbox {
+      justify-content: center;
+    }
+
+    .preset-chip {
+      min-height: 50px;
+      padding: 0.5rem 0.75rem;
+
+      .preset-name {
+        font-size: 0.75rem;
+      }
+
+      .preset-description {
+        font-size: 0.625rem;
+      }
+    }
+  }
+
+  .custom-time-section {
+    .time-inputs {
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+
+      .time-input {
+        width: 100px;
+      }
+
+      .start-custom-btn {
+        width: 100%;
+        max-width: 200px;
+      }
+    }
+  }
+
+  .timer-info {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .keyboard-shortcuts {
+    .shortcuts-list {
+      gap: 0.5rem;
+      flex-direction: column;
+
+      .shortcut {
+        font-size: 0.625rem;
+
+        kbd {
+          font-size: 0.625rem;
+        }
+      }
+    }
+  }
+
+  .completion-state {
+    .completion-content {
+      .completion-actions {
+        flex-direction: column;
+        align-items: center;
+
+        button {
+          width: 100%;
+          max-width: 200px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .time-display-section {
+    padding: 1rem;
+  }
+
+  .progress-section {
+    .progress-text {
+      font-size: 0.75rem;
+    }
+  }
+
+  .setup-header,
+  .timer-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .countdown-container {
+    .time-display-section {
+      &.warning-state,
+      &.critical-state,
+      &.finished-state {
+        border-width: 3px;
+      }
+    }
+
+    .timer-info {
+      border: 1px solid var(--mat-app-outline);
+    }
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .countdown-container,
+  .preset-chip,
+  .time-display-section,
+  .alert-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .preset-chip {
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// Dark mode specific adjustments
+@media (prefers-color-scheme: dark) {
+  .countdown-container {
+    .timer-info {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .time-display-section {
+      &.warning-state {
+        background: rgba(255, 193, 7, 0.15);
+      }
+
+      &.critical-state {
+        background: rgba(244, 67, 54, 0.2);
+      }
+
+      &.finished-state {
+        background: rgba(var(--mat-primary-rgb), 0.15);
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .countdown-container {
+    .header-controls,
+    .controls-section,
+    .keyboard-shortcuts,
+
+    .time-display-section {
+      border: 2px solid #000;
+      background: transparent !important;
+    }
+  }
+}
