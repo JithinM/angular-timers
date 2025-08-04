@@ -62,8 +62,8 @@ import { TimeDisplayComponent } from '../../shared/components/time-display/time-
         <mat-card class="timer-card">
           <mat-card-content>
             <app-time-display
-              [time]="timerService.formattedCountdownTime()"
-              [status]="timerService.countdownStatus()"
+              [time]="formattedTime()"
+              [status]="timerDisplayStatus()"
               size="large"
               [animate]="isRunning()">
             </app-time-display>
@@ -506,11 +506,30 @@ export class EggTimerComponent implements OnInit {
     if (initial === 0) return 0;
     return ((initial - remaining) / initial) * 100;
   });
-
+  
   yolkHeight = computed(() => {
     const progress = this.progress();
     // Yolk starts at 100% (bottom) and moves up as cooking progresses
     return 100 - progress;
+  });
+  
+  formattedTime = computed(() => {
+    const milliseconds = this.timeRemaining();
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const centiseconds = Math.floor((milliseconds % 1000) / 10);
+  
+    return `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+  });
+  
+  timerDisplayStatus = computed(() => {
+    if (this.isCompleted()) return 'expired';
+    if (this.isRunning()) return 'running';
+    if (this.timeRemaining() < this.initialTime()) return 'paused';
+    return 'stopped';
   });
 
   ngOnInit(): void {
