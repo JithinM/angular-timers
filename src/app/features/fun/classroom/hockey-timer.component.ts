@@ -12,6 +12,8 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { AudioService } from '../../../core/services/audio.service';
 import { TimeDisplayComponent } from '../../../shared/components/time-display/time-display.component';
 import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
+import { AnalyticsService } from '../../../core/services/analytics.service';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-hockey-timer',
@@ -671,6 +673,8 @@ export class HockeyTimerComponent implements OnInit {
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
+  seoService = inject(SeoService);
+  analyticsService = inject(AnalyticsService);
 
   formattedTime = computed(() => {
     const totalSeconds = Math.ceil(this.timeRemaining() / 1000);
@@ -703,6 +707,9 @@ export class HockeyTimerComponent implements OnInit {
   ngOnInit(): void {
     // Initialize with default settings
     this.applySettings();
+    
+    // Set initial SEO metadata
+    this.seoService.updateTimerToolSeo('Hockey Timer', '15 Minute');
   }
 
   applySettings(): void {
@@ -714,18 +721,28 @@ export class HockeyTimerComponent implements OnInit {
     if (this.currentPeriod() > this.setupPeriods) {
       this.currentPeriod.set(this.setupPeriods);
     }
+    
+    // Update SEO metadata
+    this.seoService.updateTimerToolSeo('Hockey Timer', `${this.periodMinutes} Minute`);
   }
 
   setPreset(minutes: number, periods: number): void {
     this.periodMinutes = minutes;
     this.setupPeriods = periods;
     this.applySettings();
+    
+    // Update SEO metadata with preset info
+    this.seoService.updateTimerToolSeo(`Hockey Timer (${minutes} min × ${periods})`, `${minutes} Minute`);
   }
 
   startPeriod(): void {
     if (this.timeRemaining() > 0) {
       this.isRunning.set(true);
       this.audioService.playSuccess();
+      
+      // Track timer start
+      const durationSeconds = Math.ceil(this.periodDuration() / 1000);
+      this.analyticsService.trackTimerStart('hockey-timer', durationSeconds);
       
       // Start countdown timer
       this.intervalId = setInterval(() => {
@@ -743,6 +760,9 @@ export class HockeyTimerComponent implements OnInit {
         
         if (newTime === 0) {
           this.endPeriod();
+          
+          // Track period completion
+          this.analyticsService.trackTimerComplete('hockey-timer-period', durationSeconds);
         }
       }, 100);
     }
@@ -754,6 +774,10 @@ export class HockeyTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track timer pause
+    const elapsedSeconds = Math.ceil((this.periodDuration() - this.timeRemaining()) / 1000);
+    this.analyticsService.trackTimerPause('hockey-timer', elapsedSeconds);
   }
 
   resetPeriod(): void {
@@ -763,6 +787,9 @@ export class HockeyTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track timer reset
+    this.analyticsService.trackTimerReset('hockey-timer');
   }
 
   endPeriod(): void {
@@ -771,6 +798,10 @@ export class HockeyTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track period completion
+    const durationSeconds = Math.ceil(this.periodDuration() / 1000);
+    this.analyticsService.trackTimerComplete('hockey-timer-period-end', durationSeconds);
     
     // Show period end notification
     this.snackBar.open(`🏒 Period ${this.currentPeriod()} ended!`, 'Next', {
@@ -786,6 +817,10 @@ export class HockeyTimerComponent implements OnInit {
     if (this.currentPeriod() < this.totalPeriods()) {
       this.currentPeriod.update(p => p + 1);
       this.resetPeriod();
+      
+      // Track next period
+      this.analyticsService.trackTimerStart('hockey-timer-next-period', 0);
+      
       this.snackBar.open(`🏒 Starting Period ${this.currentPeriod()}`, '', {
         duration: 3000,
         horizontalPosition: 'center',
@@ -793,6 +828,10 @@ export class HockeyTimerComponent implements OnInit {
       });
     } else {
       this.currentPeriod.update(p => p + 1);
+      
+      // Track game completion
+      this.analyticsService.trackTimerComplete('hockey-timer-game-complete', 0);
+      
       this.snackBar.open('🎉 Game complete! Great job!', 'Finish', {
         duration: 10000,
         horizontalPosition: 'center',
@@ -806,6 +845,9 @@ export class HockeyTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track game end
+    this.analyticsService.trackTimerComplete('hockey-timer-game-end', 0);
     
     this.snackBar.open('🏆 Hockey game ended!', 'Play Again', {
       duration: 10000,

@@ -1,4 +1,12 @@
 <div class="pomodoro-container" [class.fullscreen]="isFullscreen()">
+  <!-- Top Ad Banner -->
+  <app-ad-slot
+    size="banner"
+    position="top"
+    [showPlaceholder]="true"
+    class="no-print">
+  </app-ad-slot>
+  
   <!-- Setup Phase -->
   @if (isSetupMode()) {
     <div class="pomodoro-setup">
@@ -322,6 +330,14 @@
                 <span class="history-time">{{ session.completedAt }}</span>
               </div>
             }
+            
+            <!-- Bottom Ad Banner -->
+            <app-ad-slot
+              size="banner"
+              position="bottom"
+              [showPlaceholder]="true"
+              class="no-print">
+            </app-ad-slot>
           </div>
         </mat-card-content>
       </mat-card>

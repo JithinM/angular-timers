@@ -9,6 +9,7 @@ import { AdSlotComponent } from './shared/components/ad-slot/ad-slot.component';
 import { PwaInstallComponent } from './shared/components/pwa-install/pwa-install.component';
 import { PwaUpdateComponent } from './shared/components/pwa-update/pwa-update.component';
 import { PwaService } from './core/services/pwa.service';
+import { SeoService } from './core/services/seo.service';
 
 @Component({
   selector: 'app-root',
@@ -34,12 +35,16 @@ export class AppComponent implements OnInit {
   constructor(
     public audioService: AudioService,
     private pwaService: PwaService,
+    private seoService: SeoService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
     // Initialize audio context on user interaction
     this.audioService.resumeAudioContext();
+    
+    // Set default SEO metadata
+    this.seoService.resetToDefault();
     
     if (isPlatformBrowser(this.platformId)) {
       // Enable background sync for timer persistence

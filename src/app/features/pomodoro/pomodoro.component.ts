@@ -16,6 +16,7 @@ import { StorageService } from '../../core/services/storage.service';
 import { BackgroundTimerService } from '../../core/services/background-timer.service';
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
 import { ControlButtonsComponent } from '../../shared/components/control-buttons/control-buttons.component';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 interface PomodoroPreset {
   name: string;
@@ -42,7 +43,8 @@ interface PomodoroPreset {
     MatSliderModule,
     FormsModule,
     TimeDisplayComponent,
-    ControlButtonsComponent
+    ControlButtonsComponent,
+    AdSlotComponent
   ],
   templateUrl: './pomodoro.component.html',
   styleUrl: './pomodoro.component.scss'

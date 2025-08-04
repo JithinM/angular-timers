@@ -1,4 +1,12 @@
 <div class="interval-container" [class.fullscreen]="isFullscreen">
+  <!-- Top Ad Banner -->
+  <app-ad-slot
+    size="banner"
+    position="top"
+    [showPlaceholder]="true"
+    class="no-print">
+  </app-ad-slot>
+  
   <!-- Setup Phase -->
   <div class="interval-setup" *ngIf="showSetup()">
     <div class="setup-header">
@@ -320,6 +328,14 @@
           <span class="stat-value">{{ formatTime(intervalState().totalWorkTime) }}</span>
           <span class="stat-label">Work Time</span>
         </div>
+        
+        <!-- Bottom Ad Banner -->
+        <app-ad-slot
+          size="banner"
+          position="bottom"
+          [showPlaceholder]="true"
+          class="no-print">
+        </app-ad-slot>
       </div>
       
       <div class="completion-actions">

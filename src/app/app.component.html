@@ -93,7 +93,16 @@
       </div>
     </nav>
   </header>
-
+  
+  <!-- Top Ad Slot -->
+  <section class="ad-section top-ad">
+    <app-ad-slot
+      size="leaderboard"
+      position="top"
+      [showPlaceholder]="true">
+    </app-ad-slot>
+  </section>
+  
   <!-- Main Content Area with Sidebar Layout -->
   <div class="content-wrapper">
     <main class="app-main">
@@ -123,7 +132,16 @@
       </div>
     </aside>
   </div>
-
+  
+  <!-- Bottom Ad Slot -->
+  <section class="ad-section bottom-ad">
+    <app-ad-slot
+      size="leaderboard"
+      position="bottom"
+      [showPlaceholder]="true">
+    </app-ad-slot>
+  </section>
+  
   <!-- Footer -->
   <footer class="app-footer">
     <div class="footer-content">

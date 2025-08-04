@@ -13,6 +13,8 @@ import { MatListModule } from '@angular/material/list';
 import { AudioService } from '../../../core/services/audio.service';
 import { TimeDisplayComponent } from '../../../shared/components/time-display/time-display.component';
 import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
+import { AnalyticsService } from '../../../core/services/analytics.service';
+import { SeoService } from '../../../core/services/seo.service';
 
 interface PresentationSegment {
   id: string;
@@ -494,6 +496,8 @@ export class PresentationTimerComponent implements OnInit {
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
+  seoService = inject(SeoService);
+  analyticsService = inject(AnalyticsService);
 
   currentSegment = computed(() => {
     const segments = this.segments();
@@ -554,6 +558,9 @@ export class PresentationTimerComponent implements OnInit {
   ngOnInit(): void {
     // Load sample segments for demonstration
     this.loadSampleSegments();
+    
+    // Set initial SEO metadata
+    this.seoService.updateTimerToolSeo('Presentation Timer', '30 Minute');
   }
 
   addSegment(): void {
@@ -566,6 +573,10 @@ export class PresentationTimerComponent implements OnInit {
       };
       
       this.segments.update(segments => [...segments, segment]);
+      
+      // Update SEO metadata with total presentation time
+      const totalMinutes = this.segments().reduce((sum: number, seg: PresentationSegment) => sum + seg.duration, 0) / 60 + this.newSegmentDuration;
+      this.seoService.updateTimerToolSeo('Presentation Timer', `${Math.round(totalMinutes)} Minute`);
       
       // Reset form
       this.newSegmentTitle = '';
@@ -589,6 +600,9 @@ export class PresentationTimerComponent implements OnInit {
     this.segments.set([]);
     this.currentSegmentIndex.set(0);
     this.resetTimer();
+    
+    // Update SEO metadata
+    this.seoService.updateTimerToolSeo('Presentation Timer', '0 Minute');
   }
 
   loadSampleSegments(): void {
@@ -621,6 +635,9 @@ export class PresentationTimerComponent implements OnInit {
     
     this.currentSegmentIndex.set(0);
     this.resetTimer();
+    
+    // Update SEO metadata with total presentation time (30 minutes)
+    this.seoService.updateTimerToolSeo('Presentation Timer', '30 Minute');
   }
 
   startTimer(): void {
@@ -628,6 +645,10 @@ export class PresentationTimerComponent implements OnInit {
     if (segment && this.timeRemaining() > 0) {
       this.isRunning.set(true);
       this.audioService.playSuccess();
+      
+      // Track timer start
+      const durationSeconds = segment.duration;
+      this.analyticsService.trackTimerStart('presentation-timer', durationSeconds);
       
       // Start countdown timer
       this.intervalId = setInterval(() => {
@@ -645,6 +666,9 @@ export class PresentationTimerComponent implements OnInit {
         
         if (newTime === 0) {
           this.endSegment();
+          
+          // Track segment completion
+          this.analyticsService.trackTimerComplete('presentation-timer-segment', durationSeconds);
         }
       }, 100);
     }
@@ -655,6 +679,13 @@ export class PresentationTimerComponent implements OnInit {
     this.audioService.playButtonClick();
     if (this.intervalId) {
       clearInterval(this.intervalId);
+    }
+    
+    // Track timer pause
+    const segment = this.currentSegment();
+    if (segment) {
+      const elapsedSeconds = segment.duration - Math.ceil(this.timeRemaining() / 1000);
+      this.analyticsService.trackTimerPause('presentation-timer', elapsedSeconds);
     }
   }
 
@@ -671,6 +702,9 @@ export class PresentationTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track timer reset
+    this.analyticsService.trackTimerReset('presentation-timer');
   }
 
   endSegment(): void {
@@ -692,8 +726,13 @@ export class PresentationTimerComponent implements OnInit {
       return updated;
     });
     
-    // Show segment end notification
+    // Track segment completion
     const segment = this.currentSegment();
+    if (segment) {
+      this.analyticsService.trackTimerComplete('presentation-timer-segment-end', segment.duration);
+    }
+    
+    // Show segment end notification
     if (segment) {
       this.snackBar.open(`📋 "${segment.title}" completed!`, 'Next', {
         duration: 5000,
@@ -712,6 +751,10 @@ export class PresentationTimerComponent implements OnInit {
     if (currentIndex < segments.length - 1) {
       this.currentSegmentIndex.update(i => i + 1);
       this.resetTimer();
+      
+      // Track next segment
+      this.analyticsService.trackTimerStart('presentation-timer-next-segment', 0);
+      
       const nextSegment = this.currentSegment();
       if (nextSegment) {
         this.snackBar.open(`📋 Starting "${nextSegment.title}"`, '', {
@@ -722,6 +765,10 @@ export class PresentationTimerComponent implements OnInit {
       }
     } else {
       this.isPresentationComplete.set(true);
+      
+      // Track presentation completion
+      this.analyticsService.trackTimerComplete('presentation-timer-complete', 0);
+      
       this.snackBar.open('🎉 Presentation complete! Great job!', 'Finish', {
         duration: 10000,
         horizontalPosition: 'center',
@@ -735,6 +782,9 @@ export class PresentationTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track presentation finish
+    this.analyticsService.trackTimerComplete('presentation-timer-finish', 0);
     
     this.snackBar.open('🏆 Presentation finished successfully!', 'Done', {
       duration: 10000,

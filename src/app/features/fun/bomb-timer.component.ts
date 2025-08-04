@@ -11,7 +11,9 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { AudioService } from '../../core/services/audio.service';
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-bomb-timer',
@@ -545,6 +547,8 @@ export class BombTimerComponent implements OnInit {
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
+  analyticsService = inject(AnalyticsService);
+  seoService = inject(SeoService);
 
   serialNumber = computed(() => {
     return 'BMB-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
@@ -574,6 +578,9 @@ export class BombTimerComponent implements OnInit {
   ngOnInit(): void {
     // Set initial time based on difficulty
     this.setDifficulty(this.difficulty());
+    
+    // Set initial SEO metadata
+    this.seoService.updateTimerToolSeo('Bomb Timer (Medium)', '15 Second');
   }
 
   setBombTime(): void {
@@ -583,6 +590,21 @@ export class BombTimerComponent implements OnInit {
       this.timeRemaining.set(timeMs);
       this.isExploded.set(false);
       this.isDefused.set(false);
+      
+      // Update SEO metadata
+      const minutes = this.setupMinutes;
+      const seconds = this.setupSeconds;
+      let duration = '';
+      
+      if (minutes > 0 && seconds > 0) {
+        duration = `${minutes} Minute ${seconds} Second`;
+      } else if (minutes > 0) {
+        duration = `${minutes} Minute`;
+      } else {
+        duration = `${seconds} Second`;
+      }
+      
+      this.seoService.updateTimerToolSeo('Bomb Timer', duration);
     }
   }
 
@@ -605,6 +627,22 @@ export class BombTimerComponent implements OnInit {
     }
     
     this.setBombTime();
+    
+    // Update SEO metadata with difficulty level
+    let duration = '';
+    switch (level) {
+      case 'easy':
+        duration = '30 Second';
+        break;
+      case 'medium':
+        duration = '15 Second';
+        break;
+      case 'hard':
+        duration = '5 Second';
+        break;
+    }
+    
+    this.seoService.updateTimerToolSeo(`Bomb Timer (${level.charAt(0).toUpperCase() + level.slice(1)})`, duration);
   }
 
   startTimer(): void {
@@ -613,6 +651,10 @@ export class BombTimerComponent implements OnInit {
       this.isExploded.set(false);
       this.isDefused.set(false);
       this.audioService.playSuccess();
+      
+      // Track timer start
+      const durationSeconds = Math.ceil(this.initialTime() / 1000);
+      this.analyticsService.trackTimerStart('bomb-timer', durationSeconds);
       
       // Start countdown timer
       this.intervalId = setInterval(() => {
@@ -630,6 +672,9 @@ export class BombTimerComponent implements OnInit {
         
         if (newTime === 0) {
           this.explodeBomb();
+          
+          // Track timer completion (explosion)
+          this.analyticsService.trackTimerComplete('bomb-timer', durationSeconds);
         }
       }, 100);
     }
@@ -641,6 +686,10 @@ export class BombTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track timer pause
+    const elapsedSeconds = Math.ceil((this.initialTime() - this.timeRemaining()) / 1000);
+    this.analyticsService.trackTimerPause('bomb-timer', elapsedSeconds);
   }
 
   resetTimer(): void {
@@ -652,6 +701,9 @@ export class BombTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track timer reset
+    this.analyticsService.trackTimerReset('bomb-timer');
   }
 
   defuseBomb(): void {
@@ -662,6 +714,10 @@ export class BombTimerComponent implements OnInit {
       if (this.intervalId) {
         clearInterval(this.intervalId);
       }
+      
+      // Track successful defuse
+      const durationSeconds = Math.ceil(this.initialTime() / 1000);
+      this.analyticsService.trackTimerComplete('bomb-timer-defuse', durationSeconds);
       
       // Show success notification
       this.snackBar.open('✅ Bomb defused! You saved the day!', 'Awesome', {
@@ -679,6 +735,10 @@ export class BombTimerComponent implements OnInit {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    
+    // Track bomb explosion
+    const durationSeconds = Math.ceil(this.initialTime() / 1000);
+    this.analyticsService.trackTimerComplete('bomb-timer-explode', durationSeconds);
     
     // Show explosion notification
     this.snackBar.open('💥 BOOM! The bomb exploded!', 'Try Again', {

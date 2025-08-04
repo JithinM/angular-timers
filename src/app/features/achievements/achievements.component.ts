@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { StorageService, TimerHistoryEntry } from '../../core/services/storage.service';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 interface Achievement {
   id: string;
@@ -28,10 +29,19 @@ interface Achievement {
     MatIconModule,
     MatCardModule,
     MatProgressBarModule,
-    MatDividerModule
+    MatDividerModule,
+    AdSlotComponent
   ],
   template: `
     <div class="achievements-container">
+      <!-- Top Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="top"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+      
       <!-- Header -->
       <header class="achievements-header">
         <h1>
@@ -106,6 +116,14 @@ interface Achievement {
           </mat-card>
         </div>
       </section>
+      
+      <!-- Bottom Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="bottom"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
     </div>
   `,
   styles: [`

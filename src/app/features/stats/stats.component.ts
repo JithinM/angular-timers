@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { StorageService, TimerHistoryEntry } from '../../core/services/storage.service';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 interface TimerStats {
   totalSessions: number;
@@ -33,10 +34,19 @@ interface TimerTypeStats {
     MatIconModule,
     MatCardModule,
     MatProgressBarModule,
-    MatDividerModule
+    MatDividerModule,
+    AdSlotComponent
   ],
   template: `
     <div class="stats-container">
+      <!-- Top Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="top"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+      
       <!-- Header -->
       <header class="stats-header">
         <h1>
@@ -162,6 +172,14 @@ interface TimerTypeStats {
           </mat-card-content>
         </mat-card>
       </section>
+      
+      <!-- Bottom Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="bottom"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
     </div>
   `,
   styles: [`

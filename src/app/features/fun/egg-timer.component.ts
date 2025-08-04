@@ -14,7 +14,9 @@ import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
 import { StorageService } from '../../core/services/storage.service';
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-egg-timer',
@@ -510,7 +512,9 @@ export class EggTimerComponent implements OnInit {
   timerService = inject(TimerService);
   audioService = inject(AudioService);
   storageService = inject(StorageService);
+  analyticsService = inject(AnalyticsService);
   snackBar = inject(MatSnackBar);
+  seoService = inject(SeoService);
 
   progress = computed(() => {
     const initial = this.initialTime();
@@ -547,6 +551,9 @@ export class EggTimerComponent implements OnInit {
   ngOnInit(): void {
     // Set default to medium-boiled
     this.selectPreset(this.presets[1]);
+    
+    // Set initial SEO metadata
+    this.seoService.updateTimerToolSeo('Egg Timer', '6 Minute');
   }
 
   selectPreset(preset: any): void {
@@ -555,6 +562,9 @@ export class EggTimerComponent implements OnInit {
     this.timeRemaining.set(timeMs);
     this.selectedPreset.set(preset.name);
     this.isCompleted.set(false);
+    
+    // Update SEO metadata
+    this.seoService.updateTimerToolSeo('Egg Timer', `${preset.time} Minute`);
   }
 
   setCustomTime(): void {
@@ -564,6 +574,21 @@ export class EggTimerComponent implements OnInit {
       this.timeRemaining.set(timeMs);
       this.selectedPreset.set(null);
       this.isCompleted.set(false);
+      
+      // Update SEO metadata
+      const minutes = this.customMinutes;
+      const seconds = this.customSeconds;
+      let duration = '';
+      
+      if (minutes > 0 && seconds > 0) {
+        duration = `${minutes} Minute ${seconds} Second`;
+      } else if (minutes > 0) {
+        duration = `${minutes} Minute`;
+      } else {
+        duration = `${seconds} Second`;
+      }
+      
+      this.seoService.updateTimerToolSeo('Egg Timer', duration);
     }
   }
 
@@ -572,9 +597,16 @@ export class EggTimerComponent implements OnInit {
       this.isRunning.set(true);
       this.audioService.playSuccess();
       
+      // Track timer start
+      const durationSeconds = Math.floor(this.initialTime() / 1000);
+      this.analyticsService.trackTimerStart('egg-timer', durationSeconds);
+      
       // Start countdown timer
       const interval = setInterval(() => {
         if (!this.isRunning()) {
+          // Track timer pause
+          const elapsedSeconds = Math.floor((this.initialTime() - this.timeRemaining()) / 1000);
+          this.analyticsService.trackTimerPause('egg-timer', elapsedSeconds);
           clearInterval(interval);
           return;
         }
@@ -587,6 +619,9 @@ export class EggTimerComponent implements OnInit {
           this.isCompleted.set(true);
           clearInterval(interval);
           this.onTimerComplete();
+          
+          // Track timer completion
+          this.analyticsService.trackTimerComplete('egg-timer', durationSeconds);
         }
       }, 100);
     }
@@ -595,6 +630,10 @@ export class EggTimerComponent implements OnInit {
   pauseTimer(): void {
     this.isRunning.set(false);
     this.audioService.playButtonClick();
+    
+    // Track timer pause
+    const elapsedSeconds = Math.floor((this.initialTime() - this.timeRemaining()) / 1000);
+    this.analyticsService.trackTimerPause('egg-timer', elapsedSeconds);
   }
 
   resetTimer(): void {
@@ -602,6 +641,9 @@ export class EggTimerComponent implements OnInit {
     this.isCompleted.set(false);
     this.timeRemaining.set(this.initialTime());
     this.audioService.playButtonClick();
+    
+    // Track timer reset
+    this.analyticsService.trackTimerReset('egg-timer');
   }
 
   private onTimerComplete(): void {
