@@ -12,6 +12,7 @@ import { MatListModule } from '@angular/material/list';
 
 import { AudioService } from '../../../core/services/audio.service';
 import { TimeDisplayComponent } from '../../../shared/components/time-display/time-display.component';
+import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
 
 interface PresentationSegment {
   id: string;
@@ -34,7 +35,8 @@ interface PresentationSegment {
     MatProgressBarModule,
     MatSnackBarModule,
     MatListModule,
-    TimeDisplayComponent
+    TimeDisplayComponent,
+    AdSlotComponent
   ],
   template: `
     <div class="presentation-timer-container">
@@ -214,10 +216,20 @@ interface PresentationSegment {
             </div>
           </mat-card-content>
         </mat-card>
-      </section>
-
-      <!-- Presentation Tips -->
-      <section class="tips-section">
+              </section>
+              
+              <!-- Ad Slot -->
+              <section class="ad-section">
+                <app-ad-slot
+                  size="rectangle"
+                  position="inline"
+                  [showPlaceholder]="true"
+                  class="inline-ad">
+                </app-ad-slot>
+              </section>
+              
+              <!-- Presentation Tips -->
+              <section class="tips-section">
         <mat-card>
           <mat-card-header>
             <mat-card-title>

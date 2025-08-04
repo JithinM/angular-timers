@@ -11,6 +11,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { AudioService } from '../../../core/services/audio.service';
 import { TimeDisplayComponent } from '../../../shared/components/time-display/time-display.component';
+import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
 
 @Component({
   selector: 'app-basketball-timer',
@@ -25,7 +26,8 @@ import { TimeDisplayComponent } from '../../../shared/components/time-display/ti
     MatInputModule,
     MatProgressBarModule,
     MatSnackBarModule,
-    TimeDisplayComponent
+    TimeDisplayComponent,
+    AdSlotComponent
   ],
   template: `
     <div class="basketball-timer-container">
@@ -244,10 +246,20 @@ import { TimeDisplayComponent } from '../../../shared/components/time-display/ti
             </div>
           </mat-card-content>
         </mat-card>
-      </section>
-
-      <!-- Instructions Section -->
-      <section class="instructions-section">
+              </section>
+              
+              <!-- Ad Slot -->
+              <section class="ad-section">
+                <app-ad-slot
+                  size="rectangle"
+                  position="inline"
+                  [showPlaceholder]="true"
+                  class="inline-ad">
+                </app-ad-slot>
+              </section>
+              
+              <!-- Instructions Section -->
+              <section class="instructions-section">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
