@@ -1,6 +1,8 @@
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { NotificationsService } from './notifications.service';
 import { BackgroundTimerService } from './background-timer.service';
+import { BackgroundSyncService } from './background-sync.service';
+import { TimerApiService } from './timer-api.service';
 
 export interface TimerState {
   timeElapsed: number;
@@ -60,6 +62,8 @@ export interface PomodoroState {
 export class TimerService {
   private readonly notificationsService = inject(NotificationsService);
   private readonly backgroundTimerService = inject(BackgroundTimerService);
+  private readonly backgroundSyncService = inject(BackgroundSyncService);
+  private readonly timerApiService = inject(TimerApiService);
 
   // Stopwatch signals
   private readonly _stopwatchState = signal<TimerState>({
@@ -675,6 +679,23 @@ export class TimerService {
       };
 
       localStorage.setItem('timer-states', JSON.stringify(states));
+      
+      // Register sync event for background persistence
+      this.backgroundSyncService.registerSyncEvent('timer-state-update', states);
+      
+      // Save to server
+      this.timerApiService.saveTimerStates(states).subscribe({
+        next: (success) => {
+          if (success) {
+            console.log('[TimerService] Timer states saved to server');
+          } else {
+            console.warn('[TimerService] Failed to save timer states to server');
+          }
+        },
+        error: (error) => {
+          console.warn('[TimerService] Error saving timer states to server:', error);
+        }
+      });
     } catch (error) {
       console.warn('Failed to save timer states:', error);
     }
@@ -686,62 +707,87 @@ export class TimerService {
   restoreTimerStates(): void {
     if (typeof localStorage === 'undefined') return;
 
+    // First try to restore from server
+    this.timerApiService.loadTimerStates().subscribe({
+      next: (serverStates) => {
+        if (serverStates) {
+          this.restoreFromStates(serverStates);
+          console.log('[TimerService] Timer states restored from server');
+        } else {
+          // If no server states, try localStorage
+          this.restoreFromLocalStorage();
+        }
+      },
+      error: (error) => {
+        console.warn('[TimerService] Error loading timer states from server:', error);
+        // Fallback to localStorage
+        this.restoreFromLocalStorage();
+      }
+    });
+  }
+
+  private restoreFromLocalStorage(): void {
     try {
       const savedStates = localStorage.getItem('timer-states');
       if (!savedStates) return;
 
       const states = JSON.parse(savedStates);
-      const timeElapsed = Date.now() - states.timestamp;
-
-      // Restore stopwatch state
-      if (states.stopwatch.isRunning) {
-        this._stopwatchState.update(state => ({
-          ...state,
-          ...states.stopwatch,
-          timeElapsed: states.stopwatch.timeElapsed + timeElapsed
-        }));
-      } else {
-        this._stopwatchState.set(states.stopwatch);
-      }
-
-      // Restore countdown state
-      if (states.countdown.isRunning) {
-        const newTimeRemaining = Math.max(0, states.countdown.timeRemaining - timeElapsed);
-        this._countdownState.update(state => ({
-          ...state,
-          ...states.countdown,
-          timeRemaining: newTimeRemaining,
-          isExpired: newTimeRemaining === 0
-        }));
-      } else {
-        this._countdownState.set(states.countdown);
-      }
-
-      // Restore interval state
-      if (states.interval.isRunning) {
-        const newTimeRemaining = Math.max(0, states.interval.timeRemaining - timeElapsed);
-        this._intervalState.update(state => ({
-          ...state,
-          ...states.interval,
-          timeRemaining: newTimeRemaining
-        }));
-      } else {
-        this._intervalState.set(states.interval);
-      }
-
-      // Restore pomodoro state
-      if (states.pomodoro.isRunning) {
-        const newTimeRemaining = Math.max(0, states.pomodoro.timeRemaining - timeElapsed);
-        this._pomodoroState.update(state => ({
-          ...state,
-          ...states.pomodoro,
-          timeRemaining: newTimeRemaining
-        }));
-      } else {
-        this._pomodoroState.set(states.pomodoro);
-      }
+      this.restoreFromStates(states);
+      console.log('[TimerService] Timer states restored from localStorage');
     } catch (error) {
-      console.warn('Failed to restore timer states:', error);
+      console.warn('Failed to restore timer states from localStorage:', error);
+    }
+  }
+
+  private restoreFromStates(states: any): void {
+    const timeElapsed = Date.now() - states.timestamp;
+
+    // Restore stopwatch state
+    if (states.stopwatch.isRunning) {
+      this._stopwatchState.update(state => ({
+        ...state,
+        ...states.stopwatch,
+        timeElapsed: states.stopwatch.timeElapsed + timeElapsed
+      }));
+    } else {
+      this._stopwatchState.set(states.stopwatch);
+    }
+
+    // Restore countdown state
+    if (states.countdown.isRunning) {
+      const newTimeRemaining = Math.max(0, states.countdown.timeRemaining - timeElapsed);
+      this._countdownState.update(state => ({
+        ...state,
+        ...states.countdown,
+        timeRemaining: newTimeRemaining,
+        isExpired: newTimeRemaining === 0
+      }));
+    } else {
+      this._countdownState.set(states.countdown);
+    }
+
+    // Restore interval state
+    if (states.interval.isRunning) {
+      const newTimeRemaining = Math.max(0, states.interval.timeRemaining - timeElapsed);
+      this._intervalState.update(state => ({
+        ...state,
+        ...states.interval,
+        timeRemaining: newTimeRemaining
+      }));
+    } else {
+      this._intervalState.set(states.interval);
+    }
+
+    // Restore pomodoro state
+    if (states.pomodoro.isRunning) {
+      const newTimeRemaining = Math.max(0, states.pomodoro.timeRemaining - timeElapsed);
+      this._pomodoroState.update(state => ({
+        ...state,
+        ...states.pomodoro,
+        timeRemaining: newTimeRemaining
+      }));
+    } else {
+      this._pomodoroState.set(states.pomodoro);
     }
   }
 
