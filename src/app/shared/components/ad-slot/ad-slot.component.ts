@@ -1,5 +1,6 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AnalyticsService } from '../../../core/services/analytics.service';
 
 export type AdSlotSize = 'banner' | 'rectangle' | 'mobile-banner' | 'leaderboard' | 'skyscraper';
 
@@ -247,22 +248,30 @@ export class AdSlotComponent implements OnInit, OnDestroy {
   @Input() isVisible: boolean = true;
   @Input() showPlaceholder: boolean = true; // Set to false in production
   @Input() nonIntrusive: boolean = true;
-
+  
   @ViewChild('adContainer', { static: true }) adContainer!: ElementRef;
-
+  
+  private analyticsService = inject(AnalyticsService);
+  
   adId: string = '';
   private adLoaded: boolean = false;
   private retryCount: number = 0;
   private maxRetries: number = 3;
-
+  
   ngOnInit(): void {
     this.adId = this.generateAdId();
+    
+    // Track ad impression when component initializes
+    this.analyticsService.trackAdImpression(this.adId, this.adUnitId, {
+      size: this.size,
+      position: this.position
+    });
     
     if (!this.showPlaceholder) {
       this.loadAd();
     }
   }
-
+  
   ngOnDestroy(): void {
     this.cleanup();
   }
@@ -273,26 +282,32 @@ export class AdSlotComponent implements OnInit, OnDestroy {
 
   private loadAd(): void {
     if (this.adLoaded || !this.adUnitId) return;
-
+    
+    // Track ad impression when ad starts loading
+    this.analyticsService.trackAdImpression(this.adId, this.adUnitId, {
+      size: this.size,
+      position: this.position
+    });
+    
     try {
       // Add loading state
       this.adContainer.nativeElement.classList.add('loading');
-
+      
       // In a real implementation, you would integrate with ad networks like:
       // - Google AdSense
       // - Media.net
       // - Amazon Publisher Services
       // - etc.
-
+      
       // Example Google AdSense integration (pseudocode):
       // (window as any).adsbygoogle = (window as any).adsbygoogle || [];
       // (window as any).adsbygoogle.push({});
-
+      
       // Simulate ad loading for development
       setTimeout(() => {
         this.onAdLoaded();
       }, 1000);
-
+      
     } catch (error) {
       console.warn('Error loading ad:', error);
       this.onAdError();
@@ -304,6 +319,12 @@ export class AdSlotComponent implements OnInit, OnDestroy {
     this.adContainer.nativeElement.classList.remove('loading');
     this.adContainer.nativeElement.classList.add('loaded');
     
+    // Track ad view when ad is successfully loaded
+    this.analyticsService.trackAdView(this.adId, this.adUnitId, {
+      size: this.size,
+      position: this.position
+    });
+    
     // Hide placeholder when real ad loads
     this.showPlaceholder = false;
   }
@@ -311,6 +332,13 @@ export class AdSlotComponent implements OnInit, OnDestroy {
   private onAdError(): void {
     this.adContainer.nativeElement.classList.remove('loading');
     this.adContainer.nativeElement.classList.add('error');
+    
+    // Track ad error
+    this.analyticsService.trackAdError(this.adId, this.adUnitId, 'Ad failed to load', {
+      retryCount: this.retryCount,
+      size: this.size,
+      position: this.position
+    });
     
     // Retry loading with exponential backoff
     if (this.retryCount < this.maxRetries) {
@@ -345,6 +373,14 @@ export class AdSlotComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Method to track ad click (to be called by ad network or when ad is clicked)
+  trackAdClick(): void {
+    this.analyticsService.trackAdClick(this.adId, this.adUnitId, {
+      size: this.size,
+      position: this.position
+    });
+  }
+  
   // Method to refresh ad (useful for single-page applications)
   refreshAd(): void {
     if (!this.showPlaceholder) {
