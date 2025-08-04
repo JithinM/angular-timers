@@ -13,6 +13,11 @@ export const routes: Routes = [
     title: 'Stopwatch - Free Online Timer'
   },
   {
+    path: 'stopwatch/fullscreen',
+    loadComponent: () => import('./features/stopwatch/fullscreen-stopwatch.component').then(m => m.FullscreenStopwatchComponent),
+    title: 'Fullscreen Stopwatch - Free Online Timer'
+  },
+  {
     path: 'timer',
     loadComponent: () => import('./features/countdown/countdown.component').then(m => m.CountdownComponent),
     title: 'Countdown Timer - Free Online Timer'
@@ -34,33 +39,53 @@ export const routes: Routes = [
   },
   {
     path: 'clock/alarm',
-    redirectTo: '',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/clock/alarm-clock.component').then(m => m.AlarmClockComponent),
+    title: 'Alarm Clock - Free Online Clock'
   },
   {
     path: 'fun/egg-timer',
-    redirectTo: '',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/fun/egg-timer.component').then(m => m.EggTimerComponent),
+    title: 'Egg Timer - Free Online Timer'
   },
   {
     path: 'fun/bomb-timer',
-    redirectTo: '',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/fun/bomb-timer.component').then(m => m.BombTimerComponent),
+    title: 'Bomb Timer - Free Online Timer'
   },
   {
-    path: 'fun/classroom',
-    redirectTo: '',
-    pathMatch: 'full'
+    path: 'fun/classroom/basketball',
+    loadComponent: () => import('./features/fun/classroom/basketball-timer.component').then(m => m.BasketballTimerComponent),
+    title: 'Basketball Timer - Free Online Timer'
+  },
+  {
+    path: 'fun/classroom/hockey',
+    loadComponent: () => import('./features/fun/classroom/hockey-timer.component').then(m => m.HockeyTimerComponent),
+    title: 'Hockey Timer - Free Online Timer'
+  },
+  {
+    path: 'fun/classroom/presentation',
+    loadComponent: () => import('./features/fun/classroom/presentation-timer.component').then(m => m.PresentationTimerComponent),
+    title: 'Presentation Timer - Free Online Timer'
   },
   {
     path: 'settings',
-    redirectTo: '',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),
+    title: 'Settings - TimerTools'
+  },
+  {
+    path: 'stats',
+    loadComponent: () => import('./features/stats/stats.component').then(m => m.StatsComponent),
+    title: 'Statistics - TimerTools'
+  },
+  {
+    path: 'achievements',
+    loadComponent: () => import('./features/achievements/achievements.component').then(m => m.AchievementsComponent),
+    title: 'Achievements - TimerTools'
   },
   {
     path: 'about',
-    redirectTo: '',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent),
+    title: 'About TimerTools - Free Online Timers'
   },
   {
     path: '**',

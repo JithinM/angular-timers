@@ -57,5 +57,55 @@
       "type": "image/png",
       "purpose": "maskable any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Stopwatch",
+      "short_name": "Stopwatch",
+      "description": "Open the stopwatch",
+      "url": "/stopwatch"
+    },
+    {
+      "name": "Countdown Timer",
+      "short_name": "Timer",
+      "description": "Open the countdown timer",
+      "url": "/timer"
+    },
+    {
+      "name": "Interval Timer",
+      "short_name": "Interval",
+      "description": "Open the interval timer",
+      "url": "/timer/interval"
+    },
+    {
+      "name": "Pomodoro Timer",
+      "short_name": "Pomodoro",
+      "description": "Open the Pomodoro timer",
+      "url": "/timer/pomodoro"
+    },
+    {
+      "name": "Digital Clock",
+      "short_name": "Clock",
+      "description": "Open the digital clock",
+      "url": "/clock"
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Open the settings page",
+      "url": "/settings"
+    },
+    {
+      "name": "Statistics",
+      "short_name": "Stats",
+      "description": "View your timer statistics",
+      "url": "/stats"
+    },
+    {
+      "name": "Achievements",
+      "short_name": "Achievements",
+      "description": "View your achievements",
+      "url": "/achievements"
+    }
   ]
 }
