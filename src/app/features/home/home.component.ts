@@ -53,7 +53,7 @@ interface TimerTool {
       <section class="hero-section">
         <div class="container">
           <h1 class="hero-title">
-            Free Online Timers & Stopwatches
+            Free Online Timers, Stopwatches & Tools
           </h1>
           <p class="hero-subtitle">
             Perfect timing tools for cooking, exercise, study sessions, and work breaks

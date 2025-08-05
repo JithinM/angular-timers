@@ -321,7 +321,7 @@ export class SeoService {
    */
   resetToDefault(): void {
     this.updateSeoMetadata({
-      title: `${this.siteName} - Free Online Timers & Stopwatches`,
+      title: `${this.siteName} - Free Online Timers, Stopwatches & Tools`,
       description: this.defaultDescription,
       keywords: 'timer, stopwatch, countdown, free, online, cooking, exercise, study, work'
     });

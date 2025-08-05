@@ -4,7 +4,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent),
-    title: 'Free Online Timers & Stopwatches'
+    title: 'Free Online Timers, Stopwatches & Tools'
   },
   // Timer components
   {
