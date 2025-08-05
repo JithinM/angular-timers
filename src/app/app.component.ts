@@ -32,6 +32,7 @@ export class AppComponent implements OnInit {
   mobileMenuOpen = false;
   dropdownOpen = false;
   clockDropdownOpen = false;
+  settingsMenuEnabled = false; // Disable Settings menu for now
 
   constructor(
     public audioService: AudioService,

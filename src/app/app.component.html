@@ -49,7 +49,10 @@
           </div>
         </div>
         
-        <a routerLink="/settings" class="nav-link">
+        <a routerLink="/settings"
+           class="nav-link"
+           [class.disabled]="!settingsMenuEnabled"
+           (click)="settingsMenuEnabled || $event.preventDefault()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
         </a>
@@ -172,7 +175,10 @@
     <div class="footer-content">
       <div class="footer-links">
         <a routerLink="/about" class="footer-link">About</a>
-        <a routerLink="/settings" class="footer-link">Settings</a>
+        <a routerLink="/settings"
+           class="footer-link"
+           [class.disabled]="!settingsMenuEnabled"
+           (click)="settingsMenuEnabled || $event.preventDefault()">Settings</a>
         <a href="#" class="footer-link">Privacy</a>
         <a href="#" class="footer-link">Terms</a>
       </div>
