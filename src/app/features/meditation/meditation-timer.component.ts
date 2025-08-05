@@ -42,8 +42,8 @@ export class MeditationTimerComponent implements OnDestroy {
   private readonly seoService = inject(SeoService);
 
   // Configuration signals
-  readonly breatheInDuration = signal(4000); // 4 seconds
-  readonly breatheOutDuration = signal(6000); // 6 seconds
+  readonly breatheInDuration = signal(4); // 4 seconds
+  readonly breatheOutDuration = signal(6); // 6 seconds
   readonly totalCycles = signal(10); // 10 breath cycles
   readonly enableSound = signal(true);
 
@@ -57,7 +57,7 @@ export class MeditationTimerComponent implements OnDestroy {
   
   // Computed values
   readonly progress = computed(() => {
-    const totalTime = this.breatheInDuration() + this.breatheOutDuration();
+    const totalTime = (this.breatheInDuration() + this.breatheOutDuration()) * 1000; // Convert to milliseconds
     const elapsed = totalTime - this.timeRemaining();
     return (elapsed / totalTime) * 100;
   });
@@ -109,7 +109,7 @@ export class MeditationTimerComponent implements OnDestroy {
     this.isRunning.set(true);
     this.isCompleted.set(false);
     this.currentPhase.set('in');
-    this.timeRemaining.set(this.breatheInDuration());
+    this.timeRemaining.set(this.breatheInDuration() * 1000); // Convert seconds to milliseconds
     this.startTimestamp = Date.now();
     
     if (this.enableSound()) {
@@ -117,7 +117,7 @@ export class MeditationTimerComponent implements OnDestroy {
     }
     
     // Track timer start
-    const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles() / 1000;
+    const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles();
     this.analyticsService.trackTimerStart('meditation-timer', totalDuration);
     
     this.intervalId = window.setInterval(() => this.updateTimer(), 10);
@@ -126,8 +126,8 @@ export class MeditationTimerComponent implements OnDestroy {
   private updateTimer(): void {
     const elapsed = Date.now() - this.startTimestamp;
     const currentPhase = this.currentPhase();
-    const inDuration = this.breatheInDuration();
-    const outDuration = this.breatheOutDuration();
+    const inDuration = this.breatheInDuration() * 1000; // Convert seconds to milliseconds
+    const outDuration = this.breatheOutDuration() * 1000; // Convert seconds to milliseconds
     const phaseDuration = currentPhase === 'in' ? inDuration : outDuration;
     
     const timeLeft = Math.max(0, phaseDuration - (elapsed % (inDuration + outDuration)));
@@ -171,7 +171,7 @@ export class MeditationTimerComponent implements OnDestroy {
     this.pauseTimer();
     this.currentPhase.set('in');
     this.currentCycle.set(1);
-    this.timeRemaining.set(this.breatheInDuration());
+    this.timeRemaining.set(this.breatheInDuration() * 1000); // Convert seconds to milliseconds
     this.isCompleted.set(false);
     
     // Track timer reset
@@ -187,7 +187,7 @@ export class MeditationTimerComponent implements OnDestroy {
     }
     
     // Track timer completion
-    const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles() / 1000;
+    const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles();
     this.analyticsService.trackTimerComplete('meditation-timer', totalDuration);
   }
 
