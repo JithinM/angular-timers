@@ -48,6 +48,11 @@ export const routes: Routes = [
     title: 'Alarm Clock - Free Online Clock'
   },
   {
+    path: 'clock/conversion',
+    loadComponent: () => import('./features/clock/time-conversion.component').then(m => m.TimeConversionComponent),
+    title: 'Time Conversion Tool - UTC Unix Timestamp'
+  },
+  {
     path: 'fun/egg-timer',
     loadComponent: () => import('./features/fun/egg-timer.component').then(m => m.EggTimerComponent),
     title: 'Egg Timer - Free Online Timer'

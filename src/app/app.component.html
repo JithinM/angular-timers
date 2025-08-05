@@ -23,10 +23,27 @@
           <mat-icon>hourglass_empty</mat-icon>
           <span>Timer</span>
         </a>
-        <a routerLink="/clock" routerLinkActive="active" class="nav-link">
-          <mat-icon>schedule</mat-icon>
-          <span>Clock</span>
-        </a>
+        <div class="nav-dropdown">
+          <button class="nav-link dropdown-trigger" (click)="toggleClockDropdown()">
+            <mat-icon>schedule</mat-icon>
+            <span>Clock</span>
+            <mat-icon class="dropdown-icon">{{ clockDropdownOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          <div class="dropdown-menu" [class.open]="clockDropdownOpen">
+            <a routerLink="/clock" class="dropdown-link">
+              <mat-icon>schedule</mat-icon>
+              <span>World Clock</span>
+            </a>
+            <a routerLink="/clock/conversion" class="dropdown-link">
+              <mat-icon>sync_alt</mat-icon>
+              <span>Time Conversion</span>
+            </a>
+            <a routerLink="/clock/alarm" class="dropdown-link">
+              <mat-icon>alarm</mat-icon>
+              <span>Alarm Clock</span>
+            </a>
+          </div>
+        </div>
         
         <a routerLink="/settings" class="nav-link">
           <mat-icon>settings</mat-icon>

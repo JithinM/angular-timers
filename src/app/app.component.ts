@@ -31,6 +31,7 @@ export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
   mobileMenuOpen = false;
   dropdownOpen = false;
+  clockDropdownOpen = false;
 
   constructor(
     public audioService: AudioService,
@@ -66,6 +67,11 @@ export class AppComponent implements OnInit {
     this.dropdownOpen = !this.dropdownOpen;
     this.audioService.playButtonClick();
   }
+  
+  toggleClockDropdown(): void {
+    this.clockDropdownOpen = !this.clockDropdownOpen;
+    this.audioService.playButtonClick();
+  }
 
   toggleAudio(): void {
     this.audioService.toggleAudio();
@@ -75,5 +81,6 @@ export class AppComponent implements OnInit {
   closeMobileMenu(): void {
     this.mobileMenuOpen = false;
     this.dropdownOpen = false;
+    this.clockDropdownOpen = false;
   }
 }
