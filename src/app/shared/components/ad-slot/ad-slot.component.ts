@@ -1,6 +1,7 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, inject } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AnalyticsService } from '../../../core/services/analytics.service';
+import { StorageService } from '../../../core/services/storage.service';
 
 export type AdSlotSize = 'banner' | 'rectangle' | 'mobile-banner' | 'leaderboard' | 'skyscraper';
 
@@ -12,7 +13,7 @@ export type AdSlotSize = 'banner' | 'rectangle' | 'mobile-banner' | 'leaderboard
     <div 
       class="ad-slot-container"
       [ngClass]="[size, position]"
-      [style.display]="isVisible ? 'flex' : 'none'"
+      [style.display]="(isVisible && adsVisible()) ? 'flex' : 'none'"
       [attr.aria-label]="'Advertisement'"
       role="img"
     >
@@ -252,6 +253,10 @@ export class AdSlotComponent implements OnInit, OnDestroy {
   @ViewChild('adContainer', { static: true }) adContainer!: ElementRef;
   
   private analyticsService = inject(AnalyticsService);
+  private storageService = inject(StorageService);
+  
+  // Computed property that determines if ads should be visible
+  adsVisible = computed(() => !this.storageService.preferences().adsDisabled);
   
   adId: string = '';
   private adLoaded: boolean = false;

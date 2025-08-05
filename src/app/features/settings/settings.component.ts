@@ -160,6 +160,14 @@ import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.compone
             </div>
             
             
+            <div class="setting-item">
+              <mat-slide-toggle
+                [(ngModel)]="preferences().adsDisabled"
+                (change)="savePreferences()">
+                Disable Ads
+              </mat-slide-toggle>
+              <p class="setting-description">Hide all advertisements throughout the application</p>
+            </div>
           </mat-card-content>
         </mat-card>
       </section>
@@ -348,7 +356,8 @@ export class SettingsComponent implements OnInit {
     autoStartLaps: false,
     confirmReset: true,
     fullScreenMode: false,
-    favoritePresets: []
+    favoritePresets: [],
+    adsDisabled: true
   });
   
   volumeLevel = signal<'low' | 'medium' | 'high'>('medium');

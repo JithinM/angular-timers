@@ -10,6 +10,7 @@ export interface TimerPreferences {
   confirmReset: boolean;
   fullScreenMode: boolean;
   favoritePresets: number[];
+  adsDisabled: boolean;
 }
 
 export interface TimerHistoryEntry {
@@ -86,7 +87,8 @@ export class StorageService {
       autoStartLaps: false,
       confirmReset: true,
       fullScreenMode: false,
-      favoritePresets: [60000, 300000, 600000, 1500000] // 1min, 5min, 10min, 25min
+      favoritePresets: [60000, 300000, 600000, 1500000], // 1min, 5min, 10min, 25min
+      adsDisabled: true
     };
   }
 
