@@ -33,6 +33,11 @@ export const routes: Routes = [
     title: 'Pomodoro Timer - Free Online Timer'
   },
   {
+    path: 'timer/meditation',
+    loadComponent: () => import('./features/meditation/meditation-timer.component').then(m => m.MeditationTimerComponent),
+    title: 'Meditation Timer - Guided Breathing'
+  },
+  {
     path: 'clock',
     loadComponent: () => import('./features/clock/clock.component').then(m => m.ClockComponent),
     title: 'World Clock - Free Online Clock'

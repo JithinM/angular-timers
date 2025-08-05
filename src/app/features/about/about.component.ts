@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 @Component({
   selector: 'app-about',
@@ -11,10 +12,19 @@ import { MatCardModule } from '@angular/material/card';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatCardModule
+    MatCardModule,
+    AdSlotComponent
   ],
   template: `
     <div class="about-container">
+      <!-- Top Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="top"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+      
       <!-- Header -->
       <header class="about-header">
         <h1>
@@ -173,6 +183,14 @@ import { MatCardModule } from '@angular/material/card';
           </mat-card-content>
         </mat-card>
       </section>
+      
+      <!-- Bottom Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="bottom"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
     </div>
   `,
   styles: [`

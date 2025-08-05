@@ -1,4 +1,12 @@
 <div class="clock-container" [class.fullscreen]="isFullscreen()">
+  <!-- Top Ad Banner -->
+  <app-ad-slot
+    size="banner"
+    position="top"
+    [showPlaceholder]="true"
+    class="no-print">
+  </app-ad-slot>
+  
   <!-- Header -->
   <div class="clock-header">
     <h1 class="clock-title">World Clock</h1>
@@ -324,4 +332,12 @@
       </div>
     </div>
   }
+  
+  <!-- Bottom Ad Banner -->
+  <app-ad-slot
+    size="banner"
+    position="bottom"
+    [showPlaceholder]="true"
+    class="no-print">
+  </app-ad-slot>
 </div>

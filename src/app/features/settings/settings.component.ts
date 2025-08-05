@@ -13,6 +13,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { StorageService, TimerPreferences } from '../../core/services/storage.service';
 import { AudioService } from '../../core/services/audio.service';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 @Component({
   selector: 'app-settings',
@@ -28,10 +29,19 @@ import { AudioService } from '../../core/services/audio.service';
     MatSelectModule,
     MatSlideToggleModule,
     MatDividerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    AdSlotComponent
   ],
   template: `
     <div class="settings-container">
+      <!-- Top Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="top"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+      
       <!-- Header -->
       <header class="settings-header">
         <h1>
@@ -204,6 +214,14 @@ import { AudioService } from '../../core/services/audio.service';
           </mat-card-content>
         </mat-card>
       </section>
+      
+      <!-- Bottom Ad Banner -->
+      <app-ad-slot
+        size="banner"
+        position="bottom"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
     </div>
   `,
   styles: [`

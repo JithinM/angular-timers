@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '../../core/services/storage.service';
 import { BackgroundTimerService } from '../../core/services/background-timer.service';
+import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 interface TimeZoneInfo {
   id: string;
@@ -50,7 +51,8 @@ interface ClockSettings {
     MatSlideToggleModule,
     MatChipsModule,
     MatMenuModule,
-    FormsModule
+    FormsModule,
+    AdSlotComponent
   ],
   templateUrl: './clock.component.html',
   styleUrl: './clock.component.scss'

@@ -1,0 +1,94 @@
+<div class="meditation-container">
+  <!-- Top Ad Slot -->
+  <section class="ad-section top-ad">
+    <app-ad-slot
+      size="leaderboard"
+      position="top"
+      [showPlaceholder]="true">
+    </app-ad-slot>
+  </section>
+  
+  <mat-card class="meditation-card">
+    <mat-card-header>
+      <mat-card-title>Meditation Timer</mat-card-title>
+      <mat-card-subtitle>Focus on your breath</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content class="content">
+      <div class="breathing-animation" [class.breathing-in]="currentPhase() === 'in'" [class.breathing-out]="currentPhase() === 'out'">
+        <div class="circle">
+          <div class="inner-circle"></div>
+        </div>
+      </div>
+
+      <div class="phase-indicator">
+        <h2>{{ phaseLabel() }}</h2>
+        <div class="time-remaining">{{ formatTime(timeRemaining()) }}</div>
+      </div>
+
+      <div class="progress-container">
+        <mat-progress-bar mode="determinate" [value]="progress()"></mat-progress-bar>
+        <div class="cycle-counter">Cycle: {{ currentCycle() }} of {{ totalCycles() }}</div>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions class="actions">
+      <div class="action-group">
+        <button mat-raised-button color="primary" (click)="isRunning() ? pauseTimer() : startTimer()">
+          <mat-icon>{{ isRunning() ? 'pause' : 'play_arrow' }}</mat-icon>
+          {{ isRunning() ? 'Pause' : 'Start' }}
+        </button>
+        <button mat-raised-button (click)="resetTimer()" [disabled]="!isRunning() && !isCompleted()">
+          <mat-icon>replay</mat-icon>
+          Reset
+        </button>
+      </div>
+      <div class="action-group">
+        <button mat-icon-button (click)="toggleFullscreen()" [matTooltip]="isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen'">
+          <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+      </div>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-card class="settings-card">
+    <mat-card-header>
+      <mat-card-title>Settings</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="setting">
+        <mat-form-field appearance="fill">
+          <mat-label>Breathe In (seconds)</mat-label>
+          <input matInput type="number" [(ngModel)]="breatheInDuration" min="1" max="60">
+        </mat-form-field>
+      </div>
+
+      <div class="setting">
+        <mat-form-field appearance="fill">
+          <mat-label>Breathe Out (seconds)</mat-label>
+          <input matInput type="number" [(ngModel)]="breatheOutDuration" min="1" max="60">
+        </mat-form-field>
+      </div>
+
+      <div class="setting">
+        <mat-form-field appearance="fill">
+          <mat-label>Total Cycles</mat-label>
+          <input matInput type="number" [(ngModel)]="totalCycles" min="1" max="100">
+        </mat-form-field>
+      </div>
+
+      <div class="setting">
+        <mat-slide-toggle [(ngModel)]="enableSound">Enable Sound</mat-slide-toggle>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  
+  <!-- Bottom Ad Slot -->
+  <section class="ad-section bottom-ad">
+    <app-ad-slot
+      size="leaderboard"
+      position="bottom"
+      [showPlaceholder]="true">
+    </app-ad-slot>
+  </section>
+</div>

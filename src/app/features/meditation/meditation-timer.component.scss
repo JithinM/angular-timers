@@ -1,0 +1,150 @@
+.meditation-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ad-section {
+  width: 100%;
+  margin: 16px 0;
+}
+
+.meditation-card, .settings-card {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.breathing-animation {
+  width: 300px;
+  height: 300px;
+  position: relative;
+  margin: 20px 0;
+  
+  .circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 1s ease-in-out;
+    
+    .inner-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: white;
+      opacity: 0.7;
+    }
+  }
+  
+  &.breathing-in .circle {
+    transform: scale(1);
+    animation: breatheIn 4s ease-in-out;
+  }
+  
+  &.breathing-out .circle {
+    transform: scale(0.7);
+    animation: breatheOut 6s ease-in-out;
+  }
+}
+
+@keyframes breatheIn {
+  0% { transform: scale(0.7); }
+  100% { transform: scale(1); }
+}
+
+// Fullscreen styles
+:host.fullscreen {
+  .meditation-container {
+    padding: 0;
+    max-width: 100%;
+    height: 100vh;
+  }
+  
+  .meditation-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    
+    .content {
+      flex-grow: 1;
+      justify-content: center;
+    }
+  }
+  
+  .settings-card {
+    display: none;
+  }
+}
+
+@keyframes breatheOut {
+  0% { transform: scale(1); }
+  100% { transform: scale(0.7); }
+}
+
+.phase-indicator {
+  text-align: center;
+  margin: 20px 0;
+  
+  h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: #3a7bd5;
+  }
+  
+  .time-remaining {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+}
+
+.progress-container {
+  width: 100%;
+  margin-top: 20px;
+  
+  .cycle-counter {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 1.1rem;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  
+  .action-group {
+    display: flex;
+    gap: 10px;
+    
+    button {
+      min-width: 120px;
+    }
+  }
+}
+
+.settings-card {
+  .setting {
+    margin: 15px 0;
+    
+    mat-form-field {
+      width: 100%;
+    }
+  }
+}
