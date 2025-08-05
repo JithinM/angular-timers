@@ -53,6 +53,11 @@ export const routes: Routes = [
     title: 'Time Conversion Tool - UTC Unix Timestamp'
   },
   {
+    path: 'clock/days-between',
+    loadComponent: () => import('./features/clock/days-between.component').then(m => m.DaysBetweenComponent),
+    title: 'Days Between Dates Calculator'
+  },
+  {
     path: 'fun/egg-timer',
     loadComponent: () => import('./features/fun/egg-timer.component').then(m => m.EggTimerComponent),
     title: 'Egg Timer - Free Online Timer'
