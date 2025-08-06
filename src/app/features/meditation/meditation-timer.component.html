@@ -59,26 +59,26 @@
       <div class="setting">
         <mat-form-field appearance="fill">
           <mat-label>Breathe In (seconds)</mat-label>
-          <input matInput type="number" [(ngModel)]="breatheInDuration" min="1" max="60">
+          <input matInput type="number" [ngModel]="breatheInDuration()" (ngModelChange)="breatheInDuration.set($event)" min="1" max="60">
         </mat-form-field>
       </div>
 
       <div class="setting">
         <mat-form-field appearance="fill">
           <mat-label>Breathe Out (seconds)</mat-label>
-          <input matInput type="number" [(ngModel)]="breatheOutDuration" min="1" max="60">
+          <input matInput type="number" [ngModel]="breatheOutDuration()" (ngModelChange)="breatheOutDuration.set($event)" min="1" max="60">
         </mat-form-field>
       </div>
 
       <div class="setting">
         <mat-form-field appearance="fill">
           <mat-label>Total Cycles</mat-label>
-          <input matInput type="number" [(ngModel)]="totalCycles" min="1" max="100">
+          <input matInput type="number" [ngModel]="totalCycles()" (ngModelChange)="totalCycles.set($event)" min="1" max="100">
         </mat-form-field>
       </div>
 
       <div class="setting">
-        <mat-slide-toggle [(ngModel)]="enableSound">Enable Sound</mat-slide-toggle>
+        <mat-slide-toggle [ngModel]="enableSound()" (ngModelChange)="enableSound.set($event)">Enable Sound</mat-slide-toggle>
       </div>
     </mat-card-content>
   </mat-card>

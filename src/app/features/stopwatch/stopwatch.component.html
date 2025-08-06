@@ -35,7 +35,7 @@
         [timeMs]="timerService.stopwatchState().timeElapsed"
         [status]="timerService.stopwatchState().isRunning ? 'running' : 'stopped'"
         size="large"
-        [showMilliseconds]="showMilliseconds">
+        [showMilliseconds]="showMilliseconds()">
       </app-time-display>
       
       <!-- Current Lap Time (when running) -->
@@ -81,8 +81,9 @@
           Clear Laps
         </button>
         
-        <mat-slide-toggle 
-          [(ngModel)]="showMilliseconds"
+        <mat-slide-toggle
+          [ngModel]="showMilliseconds()"
+          (ngModelChange)="showMilliseconds.set($event)"
           class="ms-toggle">
           Show Milliseconds
         </mat-slide-toggle>

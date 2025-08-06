@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, effect, inject } from '@angular/core';
+import { Injectable, signal, computed, effect, inject, untracked } from '@angular/core';
 import { NotificationsService } from './notifications.service';
 import { BackgroundTimerService } from './background-timer.service';
 import { BackgroundSyncService } from './background-sync.service';
@@ -182,11 +182,14 @@ export class TimerService {
       const interval = this._intervalState();
       const pomodoro = this._pomodoroState();
       
-      if (stopwatch.isRunning || countdown.isRunning || interval.isRunning || pomodoro.isRunning) {
-        this.startInterval();
-      } else {
-        this.stopInterval();
-      }
+      // Use untracked to prevent change detection issues during SSR
+      untracked(() => {
+        if (stopwatch.isRunning || countdown.isRunning || interval.isRunning || pomodoro.isRunning) {
+          this.startInterval();
+        } else {
+          this.stopInterval();
+        }
+      });
     });
   }
 

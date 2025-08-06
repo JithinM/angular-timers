@@ -1,10 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { FormsModule } from '@angular/forms';
 
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
 import { ControlButtonsComponent, TimerAction } from '../../shared/components/control-buttons/control-buttons.component';
@@ -24,6 +26,8 @@ import { BackgroundTimerService } from '../../core/services/background-timer.ser
     MatIconModule,
     MatListModule,
     MatDividerModule,
+    MatSlideToggleModule,
+    FormsModule,
     TimeDisplayComponent,
     ControlButtonsComponent,
     AdSlotComponent
@@ -374,6 +378,9 @@ export class StopwatchComponent implements OnInit, OnDestroy {
   lapTimes: any[] = [];
   fastestLap: number | null = null;
   slowestLap: number | null = null;
+  
+  // Signal for reactive state management
+  readonly showMilliseconds = signal(true);
 
   constructor(
     public timerService: TimerService,

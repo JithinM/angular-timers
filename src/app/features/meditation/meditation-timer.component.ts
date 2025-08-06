@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect, OnDestroy, EffectRef, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnDestroy, EffectRef, HostListener, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
@@ -30,6 +31,7 @@ import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.compone
     MatInputModule,
     MatProgressBarModule,
     MatTooltipModule,
+    MatSlideToggleModule,
     AdSlotComponent
   ],
   templateUrl: './meditation-timer.component.html',
@@ -82,7 +84,8 @@ export class MeditationTimerComponent implements OnDestroy {
     this.effectRef = effect(() => {
       this.breatheInDuration();
       this.breatheOutDuration();
-      this.resetTimer();
+      // Use untracked to prevent change detection issues
+      untracked(() => this.resetTimer());
     });
 
     // Setup keyboard shortcuts

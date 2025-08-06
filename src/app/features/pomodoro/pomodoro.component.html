@@ -64,11 +64,12 @@
             <mat-card-content>
               <mat-form-field appearance="outline">
                 <mat-label>Minutes</mat-label>
-                <input matInput 
-                       type="number" 
-                       min="1" 
+                <input matInput
+                       type="number"
+                       min="1"
                        max="120"
-                       [(ngModel)]="customWorkTime"
+                       [ngModel]="customWorkTime()"
+                       (ngModelChange)="customWorkTime.set($event)"
                        class="time-input">
               </mat-form-field>
             </mat-card-content>
@@ -83,11 +84,12 @@
             <mat-card-content>
               <mat-form-field appearance="outline">
                 <mat-label>Minutes</mat-label>
-                <input matInput 
-                       type="number" 
-                       min="1" 
+                <input matInput
+                       type="number"
+                       min="1"
                        max="30"
-                       [(ngModel)]="customShortBreak"
+                       [ngModel]="customShortBreak()"
+                       (ngModelChange)="customShortBreak.set($event)"
                        class="time-input">
               </mat-form-field>
             </mat-card-content>
@@ -102,11 +104,12 @@
             <mat-card-content>
               <mat-form-field appearance="outline">
                 <mat-label>Minutes</mat-label>
-                <input matInput 
-                       type="number" 
-                       min="1" 
+                <input matInput
+                       type="number"
+                       min="1"
                        max="60"
-                       [(ngModel)]="customLongBreak"
+                       [ngModel]="customLongBreak()"
+                       (ngModelChange)="customLongBreak.set($event)"
                        class="time-input">
               </mat-form-field>
             </mat-card-content>
@@ -121,11 +124,12 @@
             <mat-card-content>
               <mat-form-field appearance="outline">
                 <mat-label>Sessions until long break</mat-label>
-                <input matInput 
-                       type="number" 
-                       min="2" 
+                <input matInput
+                       type="number"
+                       min="2"
                        max="8"
-                       [(ngModel)]="customSessions"
+                       [ngModel]="customSessions()"
+                       (ngModelChange)="customSessions.set($event)"
                        class="sessions-input">
               </mat-form-field>
             </mat-card-content>

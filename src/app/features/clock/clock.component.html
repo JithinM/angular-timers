@@ -36,27 +36,27 @@
           <div class="settings-section">
             <h4>Display Options</h4>
             <div class="settings-grid">
-              <mat-slide-toggle 
-                [(ngModel)]="format24Hour"
-                (ngModelChange)="toggleFormat()">
+              <mat-slide-toggle
+                [ngModel]="format24Hour()"
+                (ngModelChange)="format24Hour.set($event)">
                 24-Hour Format
               </mat-slide-toggle>
               
-              <mat-slide-toggle 
-                [(ngModel)]="showSeconds"
-                (ngModelChange)="toggleSeconds()">
+              <mat-slide-toggle
+                [ngModel]="showSeconds()"
+                (ngModelChange)="showSeconds.set($event)">
                 Show Seconds
               </mat-slide-toggle>
               
-              <mat-slide-toggle 
-                [(ngModel)]="showDate"
-                (ngModelChange)="toggleDate()">
+              <mat-slide-toggle
+                [ngModel]="showDate()"
+                (ngModelChange)="showDate.set($event)">
                 Show Date
               </mat-slide-toggle>
               
-              <mat-slide-toggle 
-                [(ngModel)]="showTimezone"
-                (ngModelChange)="toggleTimezoneDisplay()">
+              <mat-slide-toggle
+                [ngModel]="showTimezone()"
+                (ngModelChange)="showTimezone.set($event)">
                 Show Timezone
               </mat-slide-toggle>
             </div>
