@@ -49,14 +49,6 @@
           </div>
         </div>
         
-        <a routerLink="/settings"
-           class="nav-link"
-           [class.disabled]="!settingsMenuEnabled"
-           (click)="settingsMenuEnabled || $event.preventDefault()">
-          <mat-icon>settings</mat-icon>
-          <span>Settings</span>
-        </a>
-        
         <a routerLink="/stats" class="nav-link">
           <mat-icon>bar_chart</mat-icon>
           <span>Statistics</span>
@@ -108,6 +100,14 @@
             </a>
           </div>
         </div>
+        
+        <a routerLink="/settings"
+           class="nav-link"
+           [class.disabled]="!settingsMenuEnabled"
+           (click)="settingsMenuEnabled || $event.preventDefault()">
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
+        </a>
       </div>
       
       <div class="nav-actions">

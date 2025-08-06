@@ -1,5 +1,5 @@
-import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, signal, computed, effect, inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -464,7 +464,7 @@ interface Alarm {
     }
   `]
 })
-export class AlarmClockComponent implements OnInit {
+export class AlarmClockComponent implements OnInit, OnDestroy {
   currentTime = signal(new Date());
   alarms = signal<Alarm[]>([]);
   selectedDays = signal<string[]>(['once']);
@@ -489,10 +489,14 @@ export class AlarmClockComponent implements OnInit {
   private audioService = inject(AudioService);
   private storageService = inject(StorageService);
   private snackBar = inject(MatSnackBar);
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser = isPlatformBrowser(this.platformId);
 
   ngOnInit(): void {
     this.loadAlarms();
-    this.startTimeUpdates();
+    if (this.isBrowser) {
+      this.startTimeUpdates();
+    }
   }
 
   ngOnDestroy(): void {
@@ -502,6 +506,8 @@ export class AlarmClockComponent implements OnInit {
   }
 
   private startTimeUpdates(): void {
+    if (!this.isBrowser) return;
+    
     this.updateTime();
     this.timeInterval = setInterval(() => {
       this.updateTime();
@@ -526,7 +532,8 @@ export class AlarmClockComponent implements OnInit {
   }
 
   private triggerAlarm(alarm: Alarm): void {
-    // Play alarm sound
+    if (!this.isBrowser) return;
+    
     // Play alarm sound using a beep pattern
     this.audioService.playPattern('completion');
     
@@ -565,7 +572,9 @@ export class AlarmClockComponent implements OnInit {
     this.newAlarmLabel = '';
     this.selectedDays.set(['once']);
     
-    this.snackBar.open('Alarm added successfully!', 'Close', { duration: 3000 });
+    if (this.isBrowser) {
+      this.snackBar.open('Alarm added successfully!', 'Close', { duration: 3000 });
+    }
   }
 
   toggleAlarm(alarm: Alarm): void {
@@ -584,7 +593,9 @@ export class AlarmClockComponent implements OnInit {
   deleteAlarm(id: string): void {
     this.alarms.update(alarms => alarms.filter(alarm => alarm.id !== id));
     this.saveAlarms();
-    this.snackBar.open('Alarm deleted', 'Close', { duration: 3000 });
+    if (this.isBrowser) {
+      this.snackBar.open('Alarm deleted', 'Close', { duration: 3000 });
+    }
   }
 
   toggleDay(day: string): void {
@@ -669,7 +680,7 @@ export class AlarmClockComponent implements OnInit {
   });
 
   private loadAlarms(): void {
-    if (typeof localStorage === 'undefined') return;
+    if (!this.isBrowser || typeof localStorage === 'undefined') return;
     
     try {
       const saved = localStorage.getItem('alarm-clock-alarms');
@@ -683,7 +694,7 @@ export class AlarmClockComponent implements OnInit {
   }
 
   private saveAlarms(): void {
-    if (typeof localStorage === 'undefined') return;
+    if (!this.isBrowser || typeof localStorage === 'undefined') return;
     
     try {
       localStorage.setItem('alarm-clock-alarms', JSON.stringify(this.alarms()));
