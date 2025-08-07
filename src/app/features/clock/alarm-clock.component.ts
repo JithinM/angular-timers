@@ -79,8 +79,8 @@ interface Alarm {
         <mat-card>
           <mat-card-header>
             <mat-card-title>
-              <mat-icon>add_alarm</mat-icon>
-              Add New Alarm
+              <mat-icon>{{ editingAlarm ? 'edit' : 'add_alarm' }}</mat-icon>
+              {{ editingAlarm ? 'Edit Alarm' : 'Add New Alarm' }}
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
@@ -158,12 +158,20 @@ interface Alarm {
               </div>
 
               <div class="form-actions">
-                <button 
-                  mat-raised-button 
-                  color="primary" 
+                <button
+                  mat-raised-button
+                  color="primary"
                   type="submit"
                   [disabled]="!newAlarmTime">
-                  Add Alarm
+                  {{ editingAlarm ? 'Update Alarm' : 'Add Alarm' }}
+                </button>
+                
+                <button
+                  mat-stroked-button
+                  type="button"
+                  (click)="cancelEdit()"
+                  *ngIf="editingAlarm">
+                  Cancel
                 </button>
               </div>
             </form>
@@ -358,8 +366,14 @@ interface Alarm {
     }
 
     .form-actions {
-      text-align: center;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
       margin-top: 1rem;
+    }
+
+    .form-actions button {
+      min-width: 120px;
     }
 
     .alarm-item {
@@ -462,6 +476,28 @@ interface Alarm {
         font-size: 1.75rem;
       }
     }
+
+    /* Alarm snackbar styling */
+    :host ::ng-deep .alarm-snackbar {
+      background-color: #f44336 !important;
+      color: white !important;
+      font-size: 1.1rem !important;
+      font-weight: 500 !important;
+      z-index: 10000 !important;
+    }
+
+    :host ::ng-deep .alarm-snackbar .mat-mdc-snack-bar-action {
+      color: #ffeb3b !important;
+      font-weight: bold !important;
+      font-size: 1rem !important;
+      min-width: 80px !important;
+    }
+
+    :host ::ng-deep .alarm-snackbar .mat-mdc-button {
+      background-color: rgba(255, 235, 59, 0.2) !important;
+      border: 1px solid #ffeb3b !important;
+      border-radius: 4px !important;
+    }
   `]
 })
 export class AlarmClockComponent implements OnInit, OnDestroy {
@@ -474,6 +510,14 @@ export class AlarmClockComponent implements OnInit, OnDestroy {
   newAlarmLabel = '';
   newAlarmSound = 'beep';
   newAlarmSnooze = true;
+  
+  // Track triggered alarms to prevent multiple triggers
+  private triggeredAlarms = new Set<string>();
+  private lastCheckedMinute = -1;
+  private alarmSoundInterval: any;
+  
+  // Edit alarm state
+  editingAlarm: Alarm | null = null;
   
   weekDays = [
     { value: 'mon', label: 'Mon' },
@@ -503,6 +547,7 @@ export class AlarmClockComponent implements OnInit, OnDestroy {
     if (this.timeInterval) {
       clearInterval(this.timeInterval);
     }
+    this.stopAlarmSound();
   }
 
   private startTimeUpdates(): void {
@@ -523,9 +568,18 @@ export class AlarmClockComponent implements OnInit, OnDestroy {
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
+    // Clear triggered alarms when minute changes
+    const currentMinute = now.getMinutes();
+    if (currentMinute !== this.lastCheckedMinute) {
+      this.triggeredAlarms.clear();
+      this.lastCheckedMinute = currentMinute;
+    }
+    
     // Check if any alarms should trigger
     this.alarms().forEach(alarm => {
-      if (alarm.enabled && alarm.time === currentTime) {
+      const alarmKey = `${alarm.id}-${currentTime}`;
+      if (alarm.enabled && alarm.time === currentTime && !this.triggeredAlarms.has(alarmKey)) {
+        this.triggeredAlarms.add(alarmKey);
         this.triggerAlarm(alarm);
       }
     });
@@ -534,46 +588,115 @@ export class AlarmClockComponent implements OnInit, OnDestroy {
   private triggerAlarm(alarm: Alarm): void {
     if (!this.isBrowser) return;
     
-    // Play alarm sound using a beep pattern
-    this.audioService.playPattern('completion');
+    // Start playing alarm sound continuously
+    this.startAlarmSound();
     
-    // Show notification
-    this.snackBar.open(`⏰ ${alarm.label || 'Alarm'}!`, 'Snooze', {
-      duration: 60000, // 1 minute
+    // Show notification with dismiss and snooze options
+    const snackBarRef = this.snackBar.open(`⏰ ${alarm.label || 'Alarm'}!`, 'Snooze', {
+      duration: 0, // Don't auto-dismiss
       horizontalPosition: 'center',
-      verticalPosition: 'top'
-    }).onAction().subscribe(() => {
+      verticalPosition: 'top',
+      panelClass: ['alarm-snackbar']
+    });
+
+    // Handle snooze action
+    snackBarRef.onAction().subscribe(() => {
+      this.stopAlarmSound();
+      snackBarRef.dismiss();
       // Snooze for 5 minutes
       setTimeout(() => {
         this.triggerAlarm(alarm);
       }, 5 * 60 * 1000);
     });
+
+    // Auto-dismiss after 2 minutes if no action taken
+    setTimeout(() => {
+      this.stopAlarmSound();
+      snackBarRef.dismiss();
+    }, 2 * 60 * 1000);
+  }
+
+  private startAlarmSound(): void {
+    if (this.alarmSoundInterval) {
+      clearInterval(this.alarmSoundInterval);
+    }
+    
+    // Play sound immediately
+    this.audioService.playPattern('completion');
+    
+    // Then play every 2 seconds
+    this.alarmSoundInterval = setInterval(() => {
+      this.audioService.playPattern('completion');
+    }, 2000);
+  }
+
+  private stopAlarmSound(): void {
+    if (this.alarmSoundInterval) {
+      clearInterval(this.alarmSoundInterval);
+      this.alarmSoundInterval = null;
+    }
   }
 
   addAlarm(): void {
     if (!this.newAlarmTime) return;
 
-    const alarm: Alarm = {
-      id: Date.now().toString(),
-      time: this.newAlarmTime,
-      label: this.newAlarmLabel,
-      enabled: true,
-      repeat: this.selectedDays(),
-      sound: this.newAlarmSound,
-      snooze: this.newAlarmSnooze,
-      createdAt: new Date()
-    };
+    if (this.editingAlarm) {
+      // Update existing alarm
+      this.alarms.update(alarms =>
+        alarms.map(a => a.id === this.editingAlarm!.id ? {
+          ...a,
+          time: this.newAlarmTime,
+          label: this.newAlarmLabel,
+          repeat: this.selectedDays(),
+          sound: this.newAlarmSound,
+          snooze: this.newAlarmSnooze
+        } : a)
+      );
+      
+      if (this.isBrowser) {
+        this.snackBar.open('Alarm updated successfully!', 'Close', { duration: 3000 });
+      }
+      
+      this.editingAlarm = null;
+    } else {
+      // Add new alarm
+      const alarm: Alarm = {
+        id: Date.now().toString(),
+        time: this.newAlarmTime,
+        label: this.newAlarmLabel,
+        enabled: true,
+        repeat: this.selectedDays(),
+        sound: this.newAlarmSound,
+        snooze: this.newAlarmSnooze,
+        createdAt: new Date()
+      };
 
-    this.alarms.update(alarms => [...alarms, alarm]);
+      this.alarms.update(alarms => [...alarms, alarm]);
+      
+      if (this.isBrowser) {
+        this.snackBar.open('Alarm added successfully!', 'Close', { duration: 3000 });
+      }
+    }
+
     this.saveAlarms();
     
     // Reset form
+    this.resetForm();
+  }
+
+  resetForm(): void {
     this.newAlarmTime = '';
     this.newAlarmLabel = '';
+    this.newAlarmSound = 'beep';
+    this.newAlarmSnooze = true;
     this.selectedDays.set(['once']);
-    
+    this.editingAlarm = null;
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
     if (this.isBrowser) {
-      this.snackBar.open('Alarm added successfully!', 'Close', { duration: 3000 });
+      this.snackBar.open('Edit cancelled', 'Close', { duration: 2000 });
     }
   }
 
@@ -585,9 +708,19 @@ export class AlarmClockComponent implements OnInit, OnDestroy {
   }
 
   editAlarm(alarm: Alarm): void {
-    // For simplicity, we'll just toggle the enabled state
-    // In a real app, you'd open an edit dialog
-    this.toggleAlarm(alarm);
+    // Set the alarm for editing
+    this.editingAlarm = alarm;
+    
+    // Populate the form with the alarm's current values
+    this.newAlarmTime = alarm.time;
+    this.newAlarmLabel = alarm.label;
+    this.newAlarmSound = alarm.sound;
+    this.newAlarmSnooze = alarm.snooze;
+    this.selectedDays.set([...alarm.repeat]);
+    
+    if (this.isBrowser) {
+      this.snackBar.open('Editing alarm - modify the form and click "Update Alarm"', 'Close', { duration: 3000 });
+    }
   }
 
   deleteAlarm(id: string): void {
