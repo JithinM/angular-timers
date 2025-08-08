@@ -210,6 +210,21 @@ self.addEventListener('push', (event) => {
       body: data.body || 'Your timer has completed',
       icon: data.icon || '/assets/icons/icon-192x192.png',
       badge: data.badge || '/assets/icons/icon-72x72.png',
+      requireInteraction: true,
+      silent: false,
+      vibrate: [200, 100, 200],
+      tag: 'timer-notification',
+      renotify: true,
+      actions: [
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        },
+        {
+          action: 'view',
+          title: 'View Timer'
+        }
+      ],
       data: data.data || {}
     };
     
@@ -219,17 +234,26 @@ self.addEventListener('push', (event) => {
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
+  const action = event.action;
+  
+  if (action === 'dismiss') {
+    event.notification.close();
+    return;
+  }
+  
   event.notification.close();
   
   // Focus or open the app
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Try to focus existing window first
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
           return client.focus();
         }
       }
       
+      // If no existing window, open new one
       if (self.clients.openWindow) {
         return self.clients.openWindow('/');
       }
@@ -252,3 +276,124 @@ if ('periodicSync' in self.registration) {
     }
   });
 }
+
+// Enhanced timer completion notification
+async function showTimerNotification(timerType, message) {
+  const title = `${timerType} Timer Completed`;
+  const options = {
+    body: message || 'Your timer has finished!',
+    icon: '/assets/icons/icon-192x192.png',
+    badge: '/assets/icons/icon-72x72.png',
+    requireInteraction: true,
+    silent: false,
+    vibrate: [200, 100, 200, 100, 200],
+    tag: 'timer-completion',
+    renotify: true,
+    timestamp: Date.now(),
+    actions: [
+      {
+        action: 'dismiss',
+        title: 'Dismiss'
+      },
+      {
+        action: 'view',
+        title: 'View Timer'
+      }
+    ],
+    data: {
+      timerType: timerType,
+      completedAt: Date.now()
+    }
+  };
+  
+  return self.registration.showNotification(title, options);
+}
+
+// Background timer monitoring
+let backgroundTimerInterval = null;
+
+// Start background timer monitoring
+function startBackgroundTimerMonitoring() {
+  if (backgroundTimerInterval) return;
+  
+  backgroundTimerInterval = setInterval(async () => {
+    try {
+      // Check timer states from localStorage
+      const timerStates = await getTimerStatesFromStorage();
+      if (timerStates) {
+        await checkForCompletedTimers(timerStates);
+      }
+    } catch (error) {
+      console.error('[Service Worker] Background timer monitoring error:', error);
+    }
+  }, 1000); // Check every second
+}
+
+// Stop background timer monitoring
+function stopBackgroundTimerMonitoring() {
+  if (backgroundTimerInterval) {
+    clearInterval(backgroundTimerInterval);
+    backgroundTimerInterval = null;
+  }
+}
+
+// Get timer states from storage
+async function getTimerStatesFromStorage() {
+  try {
+    // In service worker, we need to communicate with the main thread to get localStorage
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      // Send message to get timer states
+      clients[0].postMessage({ type: 'GET_TIMER_STATES' });
+    }
+    return null; // Will be handled by message response
+  } catch (error) {
+    console.error('[Service Worker] Failed to get timer states:', error);
+    return null;
+  }
+}
+
+// Check for completed timers
+async function checkForCompletedTimers(timerStates) {
+  const currentTime = Date.now();
+  const timeElapsed = currentTime - timerStates.timestamp;
+  
+  // Check countdown timer
+  if (timerStates.countdown && timerStates.countdown.isRunning) {
+    const newTimeRemaining = Math.max(0, timerStates.countdown.timeRemaining - timeElapsed);
+    if (newTimeRemaining === 0 && timerStates.countdown.timeRemaining > 0) {
+      await showTimerNotification('Countdown', 'Your countdown timer has finished!');
+    }
+  }
+  
+  // Check interval timer
+  if (timerStates.interval && timerStates.interval.isRunning && !timerStates.interval.isCompleted) {
+    const newTimeRemaining = Math.max(0, timerStates.interval.timeRemaining - timeElapsed);
+    if (newTimeRemaining === 0) {
+      await showTimerNotification('Interval', 'Interval phase completed!');
+    }
+  }
+  
+  // Check pomodoro timer
+  if (timerStates.pomodoro && timerStates.pomodoro.isRunning && !timerStates.pomodoro.isCompleted) {
+    const newTimeRemaining = Math.max(0, timerStates.pomodoro.timeRemaining - timeElapsed);
+    if (newTimeRemaining === 0) {
+      const sessionType = timerStates.pomodoro.currentSessionType || 'work';
+      await showTimerNotification('Pomodoro', `${sessionType} session completed!`);
+    }
+  }
+}
+
+// Handle visibility change messages from main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  } else if (event.data && event.data.type === 'TAB_HIDDEN') {
+    startBackgroundTimerMonitoring();
+  } else if (event.data && event.data.type === 'TAB_VISIBLE') {
+    stopBackgroundTimerMonitoring();
+  } else if (event.data && event.data.type === 'TIMER_STATES') {
+    // Received timer states from main thread
+    checkForCompletedTimers(event.data.states);
+  }
+});
