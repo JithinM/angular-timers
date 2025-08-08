@@ -10,6 +10,7 @@ import { PwaInstallComponent } from './shared/components/pwa-install/pwa-install
 import { PwaUpdateComponent } from './shared/components/pwa-update/pwa-update.component';
 import { PwaService } from './core/services/pwa.service';
 import { SeoService } from './core/services/seo.service';
+import { BuildInfoService } from './core/services/build-info.service';
 
 @Component({
   selector: 'app-root',
@@ -33,11 +34,13 @@ export class AppComponent implements OnInit {
   dropdownOpen = false;
   clockDropdownOpen = false;
   settingsMenuEnabled = false; // Disable Settings menu
+  buildInfo = '';
 
   constructor(
     public audioService: AudioService,
     private pwaService: PwaService,
     private seoService: SeoService,
+    private buildInfoService: BuildInfoService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -47,6 +50,11 @@ export class AppComponent implements OnInit {
     
     // Set default SEO metadata
     this.seoService.resetToDefault();
+    
+    // Load build information
+    this.buildInfoService.getFullBuildInfo().subscribe(info => {
+      this.buildInfo = info;
+    });
     
     if (isPlatformBrowser(this.platformId)) {
       // Enable background sync for timer persistence

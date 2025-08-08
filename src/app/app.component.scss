@@ -382,6 +382,14 @@
     font-size: 0.875rem;
     margin: 0;
   }
+  
+  .build-info {
+    color: var(--text-disabled);
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    font-family: 'Courier New', monospace;
+    opacity: 0.8;
+  }
 }
 
 /* Mobile Responsive */

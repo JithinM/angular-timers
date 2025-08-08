@@ -1,6 +1,6 @@
 {
   "name": "angular-timers",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -11,7 +11,13 @@
     "server": "node src/server/server.js",
     "dev": "concurrently \"ng serve\" \"npm run server\"",
     "generate-sitemap": "node scripts/generate-sitemap.js",
-    "prebuild": "npm run generate-sitemap"
+    "generate-build-info": "node scripts/generate-build-info.js",
+    "increment-version": "node scripts/increment-version.js",
+    "increment-version:patch": "node scripts/increment-version.js patch",
+    "increment-version:minor": "node scripts/increment-version.js minor",
+    "increment-version:major": "node scripts/increment-version.js major",
+    "version": "npm run increment-version",
+    "prebuild": "npm run increment-version && npm run generate-sitemap && npm run generate-build-info"
   },
   "private": true,
   "dependencies": {
