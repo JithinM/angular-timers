@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
 
 // Timer state interfaces matching TimerService
 interface TimerState {
@@ -68,59 +66,65 @@ interface TimerStates {
   providedIn: 'root'
 })
 export class TimerApiService {
-  private apiUrl = '/api/timer-states';
+  private readonly STORAGE_KEY = 'timer-states';
 
-  constructor(private http: HttpClient) {}
+  constructor() {}
 
   /**
-   * Save timer states to server
+   * Save timer states to localStorage (no backend needed)
    */
   saveTimerStates(states: TimerStates): Observable<boolean> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    
-    return this.http.post<{ success: boolean }>(this.apiUrl, states, { headers })
-      .pipe(
-        map(response => response.success),
-        catchError(error => {
-          console.error('Failed to save timer states:', error);
-          return of(false);
-        })
-      );
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(states));
+        return of(true);
+      }
+      return of(false);
+    } catch (error) {
+      console.error('Failed to save timer states to localStorage:', error);
+      return of(false);
+    }
   }
 
   /**
-   * Load timer states from server
+   * Load timer states from localStorage
    */
   loadTimerStates(): Observable<TimerStates | null> {
-    return this.http.get<TimerStates>(this.apiUrl)
-      .pipe(
-        catchError(error => {
-          console.error('Failed to load timer states:', error);
-          return of(null);
-        })
-      );
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const savedStates = localStorage.getItem(this.STORAGE_KEY);
+        if (savedStates) {
+          const states = JSON.parse(savedStates) as TimerStates;
+          return of(states);
+        }
+      }
+      return of(null);
+    } catch (error) {
+      console.error('Failed to load timer states from localStorage:', error);
+      return of(null);
+    }
   }
 
   /**
-   * Sync timer states with server
+   * Sync timer states (same as save for localStorage-only implementation)
    */
   syncTimerStates(states: TimerStates): Observable<boolean> {
     return this.saveTimerStates(states);
   }
 
   /**
-   * Clear timer states from server
+   * Clear timer states from localStorage
    */
   clearTimerStates(): Observable<boolean> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    
-    return this.http.delete<{ success: boolean }>(this.apiUrl, { headers })
-      .pipe(
-        map(response => response.success),
-        catchError(error => {
-          console.error('Failed to clear timer states:', error);
-          return of(false);
-        })
-      );
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(this.STORAGE_KEY);
+        return of(true);
+      }
+      return of(false);
+    } catch (error) {
+      console.error('Failed to clear timer states from localStorage:', error);
+      return of(false);
+    }
   }
 }

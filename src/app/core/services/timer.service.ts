@@ -667,79 +667,51 @@ export class TimerService {
   }
 
   /**
-   * Save current timer states to localStorage for background persistence
+   * Save current timer states for background persistence
    */
   saveTimerStates(): void {
-    if (typeof localStorage === 'undefined') return;
+    const states = {
+      stopwatch: this._stopwatchState(),
+      countdown: this._countdownState(),
+      interval: this._intervalState(),
+      pomodoro: this._pomodoroState(),
+      timestamp: Date.now()
+    };
 
-    try {
-      const states = {
-        stopwatch: this._stopwatchState(),
-        countdown: this._countdownState(),
-        interval: this._intervalState(),
-        pomodoro: this._pomodoroState(),
-        timestamp: Date.now()
-      };
-
-      localStorage.setItem('timer-states', JSON.stringify(states));
-      
-      // Register sync event for background persistence
-      this.backgroundSyncService.registerSyncEvent('timer-state-update', states);
-      
-      // Save to server
-      this.timerApiService.saveTimerStates(states).subscribe({
-        next: (success) => {
-          if (success) {
-            console.log('[TimerService] Timer states saved to server');
-          } else {
-            console.warn('[TimerService] Failed to save timer states to server');
-          }
-        },
-        error: (error) => {
-          console.warn('[TimerService] Error saving timer states to server:', error);
+    // Register sync event for background persistence
+    this.backgroundSyncService.registerSyncEvent('timer-state-update', states);
+    
+    // Save using TimerApiService (which now uses localStorage)
+    this.timerApiService.saveTimerStates(states).subscribe({
+      next: (success) => {
+        if (success) {
+          console.log('[TimerService] Timer states saved to localStorage');
+        } else {
+          console.warn('[TimerService] Failed to save timer states to localStorage');
         }
-      });
-    } catch (error) {
-      console.warn('Failed to save timer states:', error);
-    }
+      },
+      error: (error) => {
+        console.warn('[TimerService] Error saving timer states:', error);
+      }
+    });
   }
 
   /**
    * Restore timer states from localStorage
    */
   restoreTimerStates(): void {
-    if (typeof localStorage === 'undefined') return;
-
-    // First try to restore from server
+    // Load states using TimerApiService (which now uses localStorage)
     this.timerApiService.loadTimerStates().subscribe({
-      next: (serverStates) => {
-        if (serverStates) {
-          this.restoreFromStates(serverStates);
-          console.log('[TimerService] Timer states restored from server');
-        } else {
-          // If no server states, try localStorage
-          this.restoreFromLocalStorage();
+      next: (savedStates) => {
+        if (savedStates) {
+          this.restoreFromStates(savedStates);
+          console.log('[TimerService] Timer states restored from localStorage');
         }
       },
       error: (error) => {
-        console.warn('[TimerService] Error loading timer states from server:', error);
-        // Fallback to localStorage
-        this.restoreFromLocalStorage();
+        console.warn('[TimerService] Error loading timer states:', error);
       }
     });
-  }
-
-  private restoreFromLocalStorage(): void {
-    try {
-      const savedStates = localStorage.getItem('timer-states');
-      if (!savedStates) return;
-
-      const states = JSON.parse(savedStates);
-      this.restoreFromStates(states);
-      console.log('[TimerService] Timer states restored from localStorage');
-    } catch (error) {
-      console.warn('Failed to restore timer states from localStorage:', error);
-    }
   }
 
   private restoreFromStates(states: any): void {
