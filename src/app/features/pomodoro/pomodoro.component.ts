@@ -187,7 +187,7 @@ export class PomodoroComponent implements OnDestroy {
       if (state.isCompleted) {
         this.audioService.playPattern('completion');
       }
-    });
+    }, { allowSignalWrites: true });
 
     // Auto-save settings effect
     effect(() => {
@@ -200,7 +200,7 @@ export class PomodoroComponent implements OnDestroy {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnDestroy(): void {
