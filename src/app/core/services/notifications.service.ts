@@ -47,14 +47,46 @@ export class NotificationsService {
       return;
     }
 
+    // Enhanced notification options for better background support
+    const notificationOptions: any = {
+      body: options?.body || 'Timer completed!',
+      icon: options?.icon || '/assets/icons/icon-192x192.png',
+      badge: options?.badge || '/assets/icons/icon-72x72.png',
+      requireInteraction: true, // Keep notification visible until user interacts
+      silent: false, // Allow system sound
+      vibrate: [200, 100, 200], // Vibration pattern for mobile devices
+      tag: options?.tag || 'timer-notification', // Replace previous notifications
+      renotify: true, // Show notification even if tag exists
+      timestamp: Date.now(),
+      actions: [
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        },
+        {
+          action: 'view',
+          title: 'View Timer'
+        }
+      ],
+      ...options
+    };
+
     // Send notification
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      new Notification(title, {
-        body: options?.body || 'Timer completed!',
-        icon: options?.icon || '/assets/icons/icon-192x192.png',
-        badge: options?.badge || '/assets/icons/icon-72x72.png',
-        ...options
-      });
+      const notification = new Notification(title, notificationOptions);
+      
+      // Handle notification click events
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      // Auto-close after 10 seconds if not requiring interaction
+      if (!notificationOptions.requireInteraction) {
+        setTimeout(() => {
+          notification.close();
+        }, 10000);
+      }
     }
   }
 

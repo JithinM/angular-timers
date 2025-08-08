@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { NotificationsService } from './notifications.service';
 import { StorageService } from './storage.service';
+import { AudioService } from './audio.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,8 @@ export class BackgroundTimerService {
 
   constructor(
     private notificationsService: NotificationsService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private audioService: AudioService
   ) {
     // Initialize background timer features
     if (typeof window !== 'undefined') {
@@ -37,6 +39,15 @@ export class BackgroundTimerService {
   }
 
   /**
+   * Send message to service worker
+   */
+  private sendMessageToServiceWorker(message: any): void {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(message);
+    }
+  }
+
+  /**
    * Setup before unload handler to save timer state
    */
   private setupBeforeUnloadHandler(): void {
@@ -54,12 +65,21 @@ export class BackgroundTimerService {
     // Save current timer states
     this.saveTimerState();
 
+    // Notify service worker that tab is hidden
+    this.sendMessageToServiceWorker({ type: 'TAB_HIDDEN' });
+
     // Start background sync if any timer is running
     const savedStates = this.getSavedTimerStates();
     if (savedStates) {
-      if (savedStates.stopwatch.isRunning || savedStates.countdown.isRunning || 
+      if (savedStates.stopwatch.isRunning || savedStates.countdown.isRunning ||
           savedStates.interval.isRunning || savedStates.pomodoro.isRunning) {
         this.startBackgroundSync();
+        
+        // Send timer states to service worker for monitoring
+        this.sendMessageToServiceWorker({
+          type: 'TIMER_STATES',
+          states: savedStates
+        });
       }
     }
   }
@@ -68,6 +88,9 @@ export class BackgroundTimerService {
    * Handle when tab becomes visible/active
    */
   private handleTabVisible(): void {
+    // Notify service worker that tab is visible
+    this.sendMessageToServiceWorker({ type: 'TAB_VISIBLE' });
+
     // Stop background sync
     this.stopBackgroundSync();
 
@@ -208,7 +231,7 @@ export class BackgroundTimerService {
 
       // Check if countdown just expired
       if (newTimeRemaining === 0 && savedStates.countdown.timeRemaining > 0) {
-        this.notificationsService.sendTimerCompletion('Countdown');
+        this.handleTimerCompletion('Countdown');
       }
     }
 
@@ -241,7 +264,7 @@ export class BackgroundTimerService {
               timeRemaining: 0,
               totalRestTime: savedStates.interval.totalRestTime + savedStates.interval.restTime
             };
-            this.notificationsService.sendTimerCompletion('Interval');
+            this.handleTimerCompletion('Interval');
           } else {
             // Move to next cycle
             updatedStates.interval = {
@@ -301,7 +324,7 @@ export class BackgroundTimerService {
                 completedAt: new Date()
               }]
             };
-            this.notificationsService.sendTimerCompletion('Pomodoro');
+            this.handleTimerCompletion('Pomodoro');
           } else {
             // Move to next work session
             updatedStates.pomodoro = {
@@ -336,15 +359,15 @@ export class BackgroundTimerService {
 
     // Check for completed timers and send notifications
     if (updatedStates.countdown.isExpired && !updatedStates.countdown.isRunning) {
-      this.notificationsService.sendTimerCompletion('Countdown');
+      this.handleTimerCompletion('Countdown');
     }
 
     if (updatedStates.interval.isCompleted && !updatedStates.interval.isRunning) {
-      this.notificationsService.sendTimerCompletion('Interval');
+      this.handleTimerCompletion('Interval');
     }
 
     if (updatedStates.pomodoro.isCompleted && !updatedStates.pomodoro.isRunning) {
-      this.notificationsService.sendTimerCompletion('Pomodoro');
+      this.handleTimerCompletion('Pomodoro');
     }
   }
 
@@ -389,5 +412,79 @@ export class BackgroundTimerService {
   keepTimerRunning(timerType: 'stopwatch' | 'countdown' | 'interval' | 'pomodoro'): void {
     // This method would be called when a timer needs to continue running in background
     // For now, we rely on the service worker and background sync
+  }
+
+  /**
+   * Enhanced timer completion handler with audio and notification support
+   */
+  private async handleTimerCompletion(timerType: string): Promise<void> {
+    try {
+      // Send notification
+      this.notificationsService.sendTimerCompletion(timerType);
+      
+      // Play completion sound with background support
+      await this.audioService.playTimerCompleteWithNotification();
+      
+      // Try to focus the window if possible
+      if (typeof window !== 'undefined' && window.focus) {
+        window.focus();
+      }
+      
+      // Vibrate if supported (mobile devices)
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    } catch (error) {
+      console.warn('Error handling timer completion:', error);
+    }
+  }
+
+  /**
+   * Request all necessary permissions for background functionality
+   */
+  async requestBackgroundPermissions(): Promise<{
+    notifications: boolean;
+    wakeLock: boolean;
+  }> {
+    const results = {
+      notifications: false,
+      wakeLock: false
+    };
+
+    try {
+      // Request notification permission
+      const notificationPermission = await this.notificationsService.requestPermission();
+      results.notifications = notificationPermission === 'granted';
+
+      // Request wake lock
+      results.wakeLock = await this.requestWakeLock();
+
+      return results;
+    } catch (error) {
+      console.warn('Error requesting background permissions:', error);
+      return results;
+    }
+  }
+
+  /**
+   * Check if the tab is currently hidden/inactive
+   */
+  isTabHidden(): boolean {
+    return typeof document !== 'undefined' && document.hidden;
+  }
+
+  /**
+   * Get background sync status
+   */
+  getBackgroundSyncStatus(): {
+    isActive: boolean;
+    hasWakeLock: boolean;
+    notificationPermission: NotificationPermission;
+  } {
+    return {
+      isActive: this.isBackgroundSyncActive,
+      hasWakeLock: this.wakeLock !== null,
+      notificationPermission: this.notificationsService.getPermissionStatus()
+    };
   }
 }

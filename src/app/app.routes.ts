@@ -103,6 +103,11 @@ export const routes: Routes = [
     title: 'About TimerTools - Free Online Timers'
   },
   {
+    path: 'test-background',
+    loadComponent: () => import('./features/test-background/test-background.component').then(m => m.TestBackgroundComponent),
+    title: 'Background Notification Test - TimerTools'
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full'

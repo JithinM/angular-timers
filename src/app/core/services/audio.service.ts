@@ -189,6 +189,91 @@ export class AudioService {
     }
   }
 
+  // Force audio context resume for background playback
+  async forceResumeAudioContext(): Promise<boolean> {
+    if (!this.audioContext) return false;
+    
+    try {
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      return this.audioContext.state === 'running';
+    } catch (error) {
+      console.warn('Failed to resume audio context:', error);
+      return false;
+    }
+  }
+
+  // Enhanced play sound method that handles background context
+  async playSoundWithResume(soundName: string): Promise<void> {
+    if (!this._settings().enabled) return;
+
+    // Try to resume audio context first
+    await this.forceResumeAudioContext();
+    
+    // If audio context is still not running, try alternative methods
+    if (!this.audioContext || this.audioContext.state !== 'running') {
+      this.playFallbackSound(soundName);
+      return;
+    }
+
+    this.playSound(soundName);
+  }
+
+  // Fallback sound method using HTML5 Audio for background tabs
+  private playFallbackSound(soundName: string): void {
+    if (!this.isBrowser()) return;
+
+    try {
+      // Create a simple beep using HTML5 Audio with data URL
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      // Get frequency based on sound name
+      const frequencies: { [key: string]: number } = {
+        'bell': 800,
+        'beep': 1000,
+        'click': 2000,
+        'tick': 1500,
+        'alarm': 440,
+        'success': 523.25,
+        'warning': 349.23
+      };
+
+      oscillator.frequency.value = frequencies[soundName] || 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.value = this._settings().volume * 0.3;
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.warn('Fallback sound failed:', error);
+    }
+  }
+
+  // Enhanced timer complete method for background support
+  async playTimerCompleteWithNotification(): Promise<void> {
+    // Try to play sound
+    await this.playSoundWithResume(this._settings().timerCompleteSound);
+    
+    // Also trigger browser notification sound if available
+    if (this.isBrowser() && 'Notification' in window && Notification.permission === 'granted') {
+      // Create a silent notification that triggers system sound
+      new Notification('Timer Complete', {
+        body: 'Your timer has finished!',
+        icon: '/assets/icons/icon-192x192.png',
+        silent: false, // This allows system notification sound
+        tag: 'timer-complete-sound'
+      });
+    }
+  }
+
   // Create a custom notification sound pattern
   playNotificationPattern(pattern: number[]): void {
     if (!this._settings().enabled) return;
