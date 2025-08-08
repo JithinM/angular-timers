@@ -1,20 +1,21 @@
-<div class="meditation-container">
-  <!-- Top Ad Slot -->
-  <section class="ad-section top-ad">
-    <app-ad-slot
-      size="leaderboard"
-      position="top"
-      [showPlaceholder]="true">
-    </app-ad-slot>
-  </section>
-  
-  <mat-card class="meditation-card">
-    <mat-card-header>
-      <mat-card-title>Meditation Timer</mat-card-title>
-      <mat-card-subtitle>Focus on your breath</mat-card-subtitle>
-    </mat-card-header>
+<div class="meditation-container" [class.fullscreen]="isFullscreen()">
+  <!-- Header -->
+  <div class="meditation-header" *ngIf="!isFullscreen()">
+    <h1 class="meditation-title">Meditation Timer</h1>
+    <div class="header-controls">
+      <button
+        mat-icon-button
+        [matTooltip]="isFullscreen() ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+        (click)="toggleFullscreen()"
+        class="fullscreen-btn">
+        <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      </button>
+    </div>
+  </div>
 
-    <mat-card-content class="content">
+  <!-- Main Timer Section -->
+  <div class="meditation-main">
+    <div class="timer-display-section">
       <div class="breathing-animation" [class.breathing-in]="currentPhase() === 'in'" [class.breathing-out]="currentPhase() === 'out'">
         <div class="circle">
           <div class="inner-circle"></div>
@@ -30,32 +31,36 @@
         <mat-progress-bar mode="determinate" [value]="progress()"></mat-progress-bar>
         <div class="cycle-counter">Cycle: {{ currentCycle() }} of {{ totalCycles() }}</div>
       </div>
-    </mat-card-content>
+    </div>
 
-    <mat-card-actions class="actions">
+    <!-- Controls -->
+    <div class="controls-section">
       <div class="action-group">
-        <button mat-raised-button color="primary" (click)="isRunning() ? pauseTimer() : startTimer()">
+        <button mat-fab color="primary" (click)="isRunning() ? pauseTimer() : startTimer()" class="primary-button">
           <mat-icon>{{ isRunning() ? 'pause' : 'play_arrow' }}</mat-icon>
-          {{ isRunning() ? 'Pause' : 'Start' }}
-        </button>
-        <button mat-raised-button (click)="resetTimer()" [disabled]="!isRunning() && !isCompleted()">
-          <mat-icon>replay</mat-icon>
-          Reset
         </button>
       </div>
-      <div class="action-group">
-        <button mat-icon-button (click)="toggleFullscreen()" [matTooltip]="isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen'">
-          <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      <div class="secondary-buttons">
+        <button mat-raised-button color="warn" (click)="resetTimer()" [disabled]="!isRunning() && !isCompleted()" class="control-btn">
+          <mat-icon>restart_alt</mat-icon>
+          <span class="btn-text">Reset</span>
+        </button>
+        <button
+          *ngIf="isFullscreen()"
+          mat-stroked-button
+          (click)="toggleFullscreen()"
+          class="control-btn">
+          <mat-icon>fullscreen_exit</mat-icon>
+          <span class="btn-text">Exit</span>
         </button>
       </div>
-    </mat-card-actions>
-  </mat-card>
+    </div>
+  </div>
 
-  <mat-card class="settings-card">
-    <mat-card-header>
-      <mat-card-title>Settings</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
+  <!-- Settings Section (hidden in fullscreen) -->
+  <div class="settings-section" *ngIf="!isFullscreen()">
+    <h3>Settings</h3>
+    <div class="settings-grid">
       <div class="setting">
         <mat-form-field appearance="fill">
           <mat-label>Breathe In (seconds)</mat-label>
@@ -80,15 +85,12 @@
       <div class="setting">
         <mat-slide-toggle [ngModel]="enableSound()" (ngModelChange)="enableSound.set($event)">Enable Sound</mat-slide-toggle>
       </div>
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </div>
   
-  <!-- Bottom Ad Slot -->
-  <section class="ad-section bottom-ad">
-    <app-ad-slot
-      size="leaderboard"
-      position="bottom"
-      [showPlaceholder]="true">
-    </app-ad-slot>
-  </section>
+  <!-- Ad Slots (hidden in fullscreen) -->
+  <div class="meditation-ads" *ngIf="!isFullscreen()">
+    <app-ad-slot size="leaderboard" position="top" [showPlaceholder]="true"></app-ad-slot>
+    <app-ad-slot size="leaderboard" position="bottom" [showPlaceholder]="true"></app-ad-slot>
+  </div>
 </div>

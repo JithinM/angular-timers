@@ -35,7 +35,10 @@ import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.compone
     AdSlotComponent
   ],
   templateUrl: './meditation-timer.component.html',
-  styleUrls: ['./meditation-timer.component.scss']
+  styleUrls: ['./meditation-timer.component.scss'],
+  host: {
+    '[class.fullscreen]': 'isFullscreen()'
+  }
 })
 export class MeditationTimerComponent implements OnDestroy {
   private readonly timerService = inject(TimerService);
@@ -86,7 +89,7 @@ export class MeditationTimerComponent implements OnDestroy {
       this.breatheOutDuration();
       // Use untracked to prevent change detection issues
       untracked(() => this.resetTimer());
-    });
+    }, { allowSignalWrites: true });
 
     // Setup keyboard shortcuts
     this.setupKeyboardShortcuts();

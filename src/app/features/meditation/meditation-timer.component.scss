@@ -1,27 +1,82 @@
 .meditation-container {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--mat-app-background-color);
+  position: relative;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: var(--mat-app-background-color);
+    padding: 2rem;
+    
+    .meditation-main {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .timer-display-section {
+      margin-bottom: 3rem;
+    }
+    
+    .controls-section {
+      margin-bottom: 2rem;
+    }
+  }
+}
+
+.meditation-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mat-divider-color);
+
+  .meditation-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--mat-app-on-surface);
+  }
+
+  .header-controls {
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      &:hover {
+        background-color: var(--mat-app-surface-variant);
+      }
+    }
+  }
+}
+
+.meditation-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2rem;
   max-width: 800px;
   margin: 0 auto;
 }
 
-.ad-section {
-  width: 100%;
-  margin: 16px 0;
-}
-
-.meditation-card, .settings-card {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.content {
+.timer-display-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  gap: 1rem;
+  padding: 2rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
 .breathing-animation {
@@ -39,13 +94,14 @@
     justify-content: center;
     align-items: center;
     transition: transform 1s ease-in-out;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     
     .inner-circle {
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background-color: white;
-      opacity: 0.7;
+      background-color: var(--mat-app-surface);
+      opacity: 0.8;
     }
   }
   
@@ -65,32 +121,6 @@
   100% { transform: scale(1); }
 }
 
-// Fullscreen styles
-:host.fullscreen {
-  .meditation-container {
-    padding: 0;
-    max-width: 100%;
-    height: 100vh;
-  }
-  
-  .meditation-card {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    
-    .content {
-      flex-grow: 1;
-      justify-content: center;
-    }
-  }
-  
-  .settings-card {
-    display: none;
-  }
-}
-
 @keyframes breatheOut {
   0% { transform: scale(1); }
   100% { transform: scale(0.7); }
@@ -103,12 +133,15 @@
   h2 {
     font-size: 2.5rem;
     margin-bottom: 10px;
-    color: #3a7bd5;
+    color: var(--mat-app-primary);
+    font-weight: 300;
   }
   
   .time-remaining {
     font-size: 2rem;
-    font-weight: bold;
+    font-weight: 600;
+    font-family: 'Roboto Mono', monospace;
+    color: var(--mat-app-on-surface);
   }
 }
 
@@ -120,31 +153,273 @@
     text-align: center;
     margin-top: 10px;
     font-size: 1.1rem;
+    color: var(--mat-app-on-surface-variant);
+    font-family: 'Roboto Mono', monospace;
   }
 }
 
-.actions {
+.controls-section {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 20px;
-  
-  .action-group {
+  gap: 1.5rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+
+  .primary-button {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .secondary-buttons {
     display: flex;
-    gap: 10px;
-    
-    button {
-      min-width: 120px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .control-btn {
+    min-width: 100px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      font-size: 1.25rem;
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  .btn-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+.settings-section {
+  width: 100%;
+  max-width: 800px;
+  margin: 2rem auto 0;
+  background: var(--mat-app-surface);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--mat-divider-color);
+
+  h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--mat-app-on-surface);
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  .setting {
+    mat-form-field {
+      width: 100%;
     }
   }
 }
 
-.settings-card {
-  .setting {
-    margin: 15px 0;
-    
-    mat-form-field {
+.meditation-ads {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .meditation-container {
+    padding: 0.5rem;
+
+    &.fullscreen {
+      padding: 1rem;
+    }
+  }
+
+  .meditation-header {
+    .meditation-title {
+      font-size: 1.5rem;
+    }
+
+    .header-controls {
+      gap: 0.25rem;
+    }
+  }
+
+  .breathing-animation {
+    width: 250px;
+    height: 250px;
+  }
+
+  .phase-indicator {
+    h2 {
+      font-size: 2rem;
+    }
+
+    .time-remaining {
+      font-size: 1.5rem;
+    }
+  }
+
+  .controls-section {
+    .primary-button {
+      width: 70px;
+      height: 70px;
+      font-size: 1.75rem;
+    }
+
+    .control-btn {
+      min-width: 80px;
+      height: 44px;
+    }
+
+    .btn-text {
+      font-size: 0.75rem;
+    }
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .timer-display-section {
+    padding: 1rem;
+  }
+
+  .meditation-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .breathing-animation {
+    width: 200px;
+    height: 200px;
+  }
+
+  .controls-section {
+    .primary-button {
+      width: 64px;
+      height: 64px;
+      font-size: 1.5rem;
+    }
+
+    .secondary-buttons {
+      justify-content: space-around;
       width: 100%;
+    }
+
+    .control-btn {
+      flex: 1;
+      min-width: 70px;
+      max-width: 90px;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .meditation-container {
+    .timer-display-section {
+      border: 1px solid var(--mat-app-outline);
+    }
+
+    .settings-section {
+      border-width: 2px;
+    }
+
+    .breathing-animation .circle {
+      border: 2px solid var(--mat-app-outline);
+    }
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .meditation-container,
+  .timer-display-section,
+  .breathing-animation,
+  .control-btn,
+  .primary-button {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .primary-button:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .control-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .breathing-animation {
+    &.breathing-in .circle,
+    &.breathing-out .circle {
+      animation: none;
+    }
+  }
+}
+
+// Dark mode specific adjustments
+@media (prefers-color-scheme: dark) {
+  .meditation-container {
+    .settings-section {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .breathing-animation .circle {
+      .inner-circle {
+        background-color: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .meditation-container {
+    .header-controls,
+    .controls-section,
+    .meditation-ads {
+      display: none !important;
+    }
+
+    .timer-display-section {
+      border: 2px solid #000;
+      background: transparent !important;
+    }
+
+    .settings-section {
+      border: 1px solid #000;
+      background: transparent !important;
     }
   }
 }
