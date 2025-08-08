@@ -74,9 +74,9 @@
                 }
               ],
               "sourceMap": {
-                "scripts": true,
-                "styles": true,
-                "vendor": true
+                "scripts": false,
+                "styles": false,
+                "vendor": false
               },
               "outputHashing": "all",
               "serviceWorker": "ngsw-config.json"
