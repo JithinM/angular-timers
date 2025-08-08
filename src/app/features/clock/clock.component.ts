@@ -187,7 +187,7 @@ export class ClockComponent implements OnDestroy {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('clockSettings', JSON.stringify(settings));
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnDestroy(): void {

@@ -138,7 +138,7 @@ export class IntervalComponent implements OnInit, OnDestroy {
       if (state.isCompleted && !prevState?.isCompleted) {
         this.onIntervalCompleted();
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   private previousState: any = null;

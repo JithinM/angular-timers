@@ -116,19 +116,19 @@ export class CountdownComponent implements OnInit, OnDestroy {
       if (this.isFinished()) {
         this.onTimerFinished();
       }
-    });
+    }, { allowSignalWrites: true });
 
     effect(() => {
       if (this.showCriticalAlert()) {
         this.showCriticalNotification();
       }
-    });
+    }, { allowSignalWrites: true });
 
     effect(() => {
       if (this.showUrgentAlert()) {
         this.showUrgentNotification();
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit(): void {
