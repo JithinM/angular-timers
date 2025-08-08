@@ -31,11 +31,11 @@
   <div class="stopwatch-main">
     <!-- Time Display -->
     <div class="time-display-section">
-      <app-time-display 
-        [timeMs]="timerService.stopwatchState().timeElapsed"
+      <app-time-display
+        [time]="timerService.formattedStopwatchTime()"
         [status]="timerService.stopwatchState().isRunning ? 'running' : 'stopped'"
         size="large"
-        [showMilliseconds]="showMilliseconds()">
+        [animate]="true">
       </app-time-display>
       
       <!-- Current Lap Time (when running) -->
@@ -49,10 +49,9 @@
     <div class="controls-section">
       <app-control-buttons
         [isRunning]="timerService.stopwatchState().isRunning"
-        [hasTime]="timerService.stopwatchState().timeElapsed > 0"
         layout="horizontal"
-        (actionClick)="onTimerAction($event)"
-        showLap="true">
+        (action)="onTimerAction($event)"
+        [showLap]="true">
       </app-control-buttons>
     </div>
 
@@ -137,7 +136,7 @@
               class="lap-diff"
               [class.faster]="lap.diff < 0"
               [class.slower]="lap.diff > 0">
-              {{ lap.diff === 0 ? '-' : (lap.diff > 0 ? '+' : '') + formatTime(Math.abs(lap.diff)) }}
+              {{ lap.diff === 0 ? '-' : (lap.diff > 0 ? '+' : '') + formatTime(getAbsoluteValue(lap.diff)) }}
             </span>
           </div>
         </div>
@@ -155,6 +154,6 @@
 
 <!-- Ad Slots for Non-Fullscreen Mode -->
 <div class="stopwatch-ads" *ngIf="!isFullscreen">
-  <app-ad-slot type="rectangle" class="stopwatch-ad-primary"></app-ad-slot>
-  <app-ad-slot type="banner" class="stopwatch-ad-secondary"></app-ad-slot>
+  <app-ad-slot size="rectangle" class="stopwatch-ad-primary"></app-ad-slot>
+  <app-ad-slot size="banner" class="stopwatch-ad-secondary"></app-ad-slot>
 </div>
