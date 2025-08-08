@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { NotificationsService } from './notifications.service';
 import { StorageService } from './storage.service';
 
@@ -71,8 +71,9 @@ export class BackgroundTimerService {
     // Stop background sync
     this.stopBackgroundSync();
 
-    // Restore timer states and check for completed timers
-    this.restoreAndCheckTimers();
+    // Trigger timer service to restore states with proper time calculation
+    // The TimerService.restoreTimerStates() method will handle the time elapsed calculation
+    this.triggerTimerRestore();
   }
 
   /**
@@ -134,29 +135,13 @@ export class BackgroundTimerService {
   }
 
   /**
-   * Restore timer states and check for completed timers
+   * Trigger timer service to restore states
+   * This will be called by TimerService when it's ready
    */
-  private restoreAndCheckTimers(): void {
-    this.restoreTimerState();
-
-    // Check if any timers completed while tab was hidden
-    const savedStates = this.getSavedTimerStates();
-    if (savedStates) {
-      // Check countdown timer completion
-      if (savedStates.countdown.isExpired && !savedStates.countdown.isRunning) {
-        this.notificationsService.sendTimerCompletion('Countdown');
-      }
-
-      // Check interval timer completion
-      if (savedStates.interval.isCompleted && !savedStates.interval.isRunning) {
-        this.notificationsService.sendTimerCompletion('Interval');
-      }
-
-      // Check pomodoro timer completion
-      if (savedStates.pomodoro.isCompleted && !savedStates.pomodoro.isRunning) {
-        this.notificationsService.sendTimerCompletion('Pomodoro');
-      }
-    }
+  triggerTimerRestore(): void {
+    // This method will be called by TimerService to restore states
+    // The actual restoration logic is handled by TimerService.restoreTimerStates()
+    // which properly calculates elapsed time and updates all timer states
   }
 
   /**
@@ -191,22 +176,174 @@ export class BackgroundTimerService {
    * Synchronize timer states in background
    */
   private syncTimers(): void {
-    // Check for timer completions and send notifications
     const savedStates = this.getSavedTimerStates();
     if (!savedStates) return;
 
-    // Check countdown completion
-    if (savedStates.countdown.isExpired && !savedStates.countdown.isRunning) {
+    const currentTime = Date.now();
+    const timeElapsed = currentTime - savedStates.timestamp;
+    let statesUpdated = false;
+
+    // Update running timers with elapsed time
+    const updatedStates = { ...savedStates };
+
+    // Update stopwatch if running
+    if (savedStates.stopwatch.isRunning) {
+      updatedStates.stopwatch = {
+        ...savedStates.stopwatch,
+        timeElapsed: savedStates.stopwatch.timeElapsed + timeElapsed
+      };
+      statesUpdated = true;
+    }
+
+    // Update countdown if running
+    if (savedStates.countdown.isRunning) {
+      const newTimeRemaining = Math.max(0, savedStates.countdown.timeRemaining - timeElapsed);
+      updatedStates.countdown = {
+        ...savedStates.countdown,
+        timeRemaining: newTimeRemaining,
+        isExpired: newTimeRemaining === 0,
+        isRunning: newTimeRemaining > 0
+      };
+      statesUpdated = true;
+
+      // Check if countdown just expired
+      if (newTimeRemaining === 0 && savedStates.countdown.timeRemaining > 0) {
+        this.notificationsService.sendTimerCompletion('Countdown');
+      }
+    }
+
+    // Update interval timer if running
+    if (savedStates.interval.isRunning && !savedStates.interval.isCompleted) {
+      const newTimeRemaining = Math.max(0, savedStates.interval.timeRemaining - timeElapsed);
+      updatedStates.interval = {
+        ...savedStates.interval,
+        timeRemaining: newTimeRemaining
+      };
+
+      // Handle phase transitions for interval timer
+      if (newTimeRemaining === 0) {
+        if (savedStates.interval.isWorkPhase) {
+          // Work phase completed, switch to rest
+          updatedStates.interval = {
+            ...updatedStates.interval,
+            isWorkPhase: false,
+            timeRemaining: savedStates.interval.restTime,
+            totalWorkTime: savedStates.interval.totalWorkTime + savedStates.interval.workTime
+          };
+        } else {
+          // Rest phase completed
+          if (savedStates.interval.currentCycle >= savedStates.interval.totalCycles) {
+            // All cycles completed
+            updatedStates.interval = {
+              ...updatedStates.interval,
+              isCompleted: true,
+              isRunning: false,
+              timeRemaining: 0,
+              totalRestTime: savedStates.interval.totalRestTime + savedStates.interval.restTime
+            };
+            this.notificationsService.sendTimerCompletion('Interval');
+          } else {
+            // Move to next cycle
+            updatedStates.interval = {
+              ...updatedStates.interval,
+              currentCycle: savedStates.interval.currentCycle + 1,
+              isWorkPhase: true,
+              timeRemaining: savedStates.interval.workTime,
+              totalRestTime: savedStates.interval.totalRestTime + savedStates.interval.restTime
+            };
+          }
+        }
+      }
+      statesUpdated = true;
+    }
+
+    // Update pomodoro timer if running
+    if (savedStates.pomodoro.isRunning && !savedStates.pomodoro.isCompleted) {
+      const newTimeRemaining = Math.max(0, savedStates.pomodoro.timeRemaining - timeElapsed);
+      updatedStates.pomodoro = {
+        ...savedStates.pomodoro,
+        timeRemaining: newTimeRemaining
+      };
+
+      // Handle session transitions for pomodoro timer
+      if (newTimeRemaining === 0) {
+        if (savedStates.pomodoro.currentSessionType === 'work') {
+          // Work session completed, move to break
+          const nextBreakType = savedStates.pomodoro.currentSession % savedStates.pomodoro.sessionsUntilLongBreak === 0 ? 'longBreak' : 'shortBreak';
+          const nextBreakTime = nextBreakType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime;
+          
+          updatedStates.pomodoro = {
+            ...updatedStates.pomodoro,
+            currentSessionType: nextBreakType,
+            timeRemaining: nextBreakTime,
+            completedSessions: savedStates.pomodoro.completedSessions + 1,
+            totalWorkTime: savedStates.pomodoro.totalWorkTime + savedStates.pomodoro.workTime,
+            sessionHistory: [...savedStates.pomodoro.sessionHistory, {
+              type: 'work',
+              duration: savedStates.pomodoro.workTime,
+              completedAt: new Date()
+            }]
+          };
+        } else {
+          // Break session completed
+          if (savedStates.pomodoro.currentSession >= 8) { // Complete after 4 full cycles
+            updatedStates.pomodoro = {
+              ...updatedStates.pomodoro,
+              isCompleted: true,
+              isRunning: false,
+              timeRemaining: 0,
+              totalBreakTime: savedStates.pomodoro.totalBreakTime + (
+                savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime
+              ),
+              sessionHistory: [...savedStates.pomodoro.sessionHistory, {
+                type: savedStates.pomodoro.currentSessionType,
+                duration: savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime,
+                completedAt: new Date()
+              }]
+            };
+            this.notificationsService.sendTimerCompletion('Pomodoro');
+          } else {
+            // Move to next work session
+            updatedStates.pomodoro = {
+              ...updatedStates.pomodoro,
+              currentSession: savedStates.pomodoro.currentSession + 1,
+              currentSessionType: 'work',
+              timeRemaining: savedStates.pomodoro.workTime,
+              totalBreakTime: savedStates.pomodoro.totalBreakTime + (
+                savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime
+              ),
+              sessionHistory: [...savedStates.pomodoro.sessionHistory, {
+                type: savedStates.pomodoro.currentSessionType,
+                duration: savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime,
+                completedAt: new Date()
+              }]
+            };
+          }
+        }
+      }
+      statesUpdated = true;
+    }
+
+    // Save updated states back to localStorage if any changes were made
+    if (statesUpdated) {
+      updatedStates.timestamp = currentTime;
+      try {
+        localStorage.setItem('timer-states', JSON.stringify(updatedStates));
+      } catch (error) {
+        console.warn('Failed to update timer states during sync:', error);
+      }
+    }
+
+    // Check for completed timers and send notifications
+    if (updatedStates.countdown.isExpired && !updatedStates.countdown.isRunning) {
       this.notificationsService.sendTimerCompletion('Countdown');
     }
 
-    // Check interval completion
-    if (savedStates.interval.isCompleted && !savedStates.interval.isRunning) {
+    if (updatedStates.interval.isCompleted && !updatedStates.interval.isRunning) {
       this.notificationsService.sendTimerCompletion('Interval');
     }
 
-    // Check pomodoro completion
-    if (savedStates.pomodoro.isCompleted && !savedStates.pomodoro.isRunning) {
+    if (updatedStates.pomodoro.isCompleted && !updatedStates.pomodoro.isRunning) {
       this.notificationsService.sendTimerCompletion('Pomodoro');
     }
   }

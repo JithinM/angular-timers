@@ -191,6 +191,24 @@ export class TimerService {
         }
       });
     });
+
+    // Setup visibility change handler to restore timer states when tab becomes visible
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          // Tab became visible, restore timer states
+          this.restoreTimerStates();
+        }
+      });
+    }
+
+    // Restore timer states on service initialization
+    if (typeof window !== 'undefined') {
+      // Use setTimeout to ensure this runs after the constructor completes
+      setTimeout(() => {
+        this.restoreTimerStates();
+      }, 0);
+    }
   }
 
   // Stopwatch methods
@@ -201,6 +219,7 @@ export class TimerService {
       isPaused: false,
       startTime: state.startTime || Date.now() - state.timeElapsed
     }));
+    this.saveTimerStates();
   }
 
   stopStopwatch(): void {
@@ -209,6 +228,7 @@ export class TimerService {
       isRunning: false,
       isPaused: true
     }));
+    this.saveTimerStates();
   }
 
   resetStopwatch(): void {
@@ -221,6 +241,7 @@ export class TimerService {
       pausedTime: 0,
       laps: []
     }));
+    this.saveTimerStates();
   }
 
   addLap(): void {
@@ -249,6 +270,7 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      this.saveTimerStates();
     }
   }
 
@@ -258,6 +280,7 @@ export class TimerService {
       isRunning: false,
       isPaused: true
     }));
+    this.saveTimerStates();
   }
 
   resetCountdown(): void {
@@ -269,6 +292,7 @@ export class TimerService {
       isPaused: false,
       isExpired: false
     }));
+    this.saveTimerStates();
   }
 
   addTimeToCountdown(milliseconds: number): void {
@@ -305,6 +329,7 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      this.saveTimerStates();
     }
   }
 
@@ -314,6 +339,7 @@ export class TimerService {
       isRunning: false,
       isPaused: true
     }));
+    this.saveTimerStates();
   }
 
   resetIntervalTimer(): void {
@@ -329,6 +355,7 @@ export class TimerService {
       totalWorkTime: 0,
       totalRestTime: 0
     }));
+    this.saveTimerStates();
   }
 
   skipIntervalPhase(): void {
@@ -445,6 +472,7 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      this.saveTimerStates();
     }
   }
 
@@ -454,6 +482,7 @@ export class TimerService {
       isRunning: false,
       isPaused: true
     }));
+    this.saveTimerStates();
   }
 
   resetPomodoroTimer(): void {
@@ -471,6 +500,7 @@ export class TimerService {
       totalBreakTime: 0,
       sessionHistory: []
     }));
+    this.saveTimerStates();
   }
 
   skipPomodoroSession(): void {
