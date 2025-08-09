@@ -1,4 +1,4 @@
-import { Component, signal, computed, effect, OnDestroy, inject, untracked } from '@angular/core';
+import { Component, signal, computed, effect, OnDestroy, inject, untracked, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -50,12 +50,13 @@ interface PomodoroPreset {
   styleUrl: './pomodoro.component.scss'
 })
 export class PomodoroComponent implements OnDestroy {
-  private readonly timerService = inject(TimerService);
-  private readonly audioService = inject(AudioService);
-  private readonly storageService = inject(StorageService);
-  private readonly backgroundTimerService = inject(BackgroundTimerService);
+  private timerService = inject(TimerService);
+  private storageService = inject(StorageService);
+  private audioService = inject(AudioService);
+  private bgTimer = inject(BackgroundTimerService);
+  private destroyRef = inject(DestroyRef);
 
-  // Signals for reactive state management
+  // Component state
   readonly pomodoroState = this.timerService.pomodoroState;
   readonly pomodoroStatus = this.timerService.pomodoroStatus;
   readonly formattedTime = this.timerService.formattedPomodoroTime;
@@ -166,9 +167,32 @@ export class PomodoroComponent implements OnDestroy {
   private keyboardListener?: (event: KeyboardEvent) => void;
   private previousSessionType: 'work' | 'shortBreak' | 'longBreak' = 'work';
 
+  private getCurrentPhaseTime(): number {
+    const state = this.pomodoroState();
+    switch (state.currentSessionType) {
+      case 'work':
+        return state.workTime * 60;
+      case 'shortBreak':
+        return state.shortBreakTime * 60;
+      case 'longBreak':
+        return state.longBreakTime * 60;
+      default:
+        return 0;
+    }
+  }
+
   constructor() {
-    // Load saved settings
-    this.loadSettings();
+    // First restore timer states
+    this.timerService.restoreTimerStates();
+
+    // Update setup mode based on timer state
+    const initialState = this.pomodoroState();
+    this.isSetupMode.set(!initialState.isRunning && !initialState.isPaused);
+    
+    // Then load settings, but only if in setup mode
+    if (this.isSetupMode()) {
+      this.loadSettings();
+    }
 
     // Setup keyboard shortcuts
     this.setupKeyboardShortcuts();
@@ -176,6 +200,8 @@ export class PomodoroComponent implements OnDestroy {
     // Effect to handle session changes for audio feedback
     effect(() => {
       const state = this.pomodoroState();
+
+      // Session type change handling
       if (state.currentSessionType !== this.previousSessionType) {
         if (!this.isSetupMode()) {
           this.audioService.playSuccess();
@@ -187,7 +213,18 @@ export class PomodoroComponent implements OnDestroy {
       if (state.isCompleted) {
         this.audioService.playPattern('completion');
       }
+
+      // Update setup mode based on timer state
+      this.isSetupMode.set(!state.isRunning && !state.isPaused);
     }, { allowSignalWrites: true });
+    
+    // Effect to ensure timer state is always saved
+    effect(() => {
+      const state = this.pomodoroState();
+      if (state.isRunning || state.isPaused) {
+        this.timerService.saveTimerStates();
+      }
+    });
 
     // Auto-save settings effect
     effect(() => {
@@ -211,26 +248,32 @@ export class PomodoroComponent implements OnDestroy {
 
   // Preset selection methods
   selectPreset(preset: PomodoroPreset): void {
-    this.selectedPreset.set(preset);
-    this.setupPomodoro(
-      preset.workTime * 60 * 1000,
-      preset.shortBreak * 60 * 1000,
-      preset.longBreak * 60 * 1000,
-      preset.sessions
-    );
-    this.startPomodoro();
+    // Allow preset selection in setup mode
+    if (this.isSetupMode()) {
+      this.selectedPreset.set(preset);
+      this.setupPomodoro(
+        preset.workTime * 60 * 1000,
+        preset.shortBreak * 60 * 1000,
+        preset.longBreak * 60 * 1000,
+        preset.sessions
+      );
+      this.startPomodoro();
+    }
   }
 
   // Custom setup methods
   startCustomPomodoro(): void {
-    this.selectedPreset.set(null);
-    this.setupPomodoro(
-      this.customWorkTime() * 60 * 1000,
-      this.customShortBreak() * 60 * 1000,
-      this.customLongBreak() * 60 * 1000,
-      this.customSessions()
-    );
-    this.startPomodoro();
+    // Allow custom setup in setup mode
+    if (this.isSetupMode()) {
+      this.selectedPreset.set(null);
+      this.setupPomodoro(
+        this.customWorkTime() * 60 * 1000,
+        this.customShortBreak() * 60 * 1000,
+        this.customLongBreak() * 60 * 1000,
+        this.customSessions()
+      );
+      this.startPomodoro();
+    }
   }
 
   private setupPomodoro(workTime: number, shortBreak: number, longBreak: number, sessions: number): void {
@@ -260,6 +303,7 @@ export class PomodoroComponent implements OnDestroy {
     this.timerService.resetPomodoroTimer();
     this.isSetupMode.set(true);
     this.selectedPreset.set(null);
+    this.loadSettings();  // Restore saved settings when resetting
     // Save timer state for background persistence
     this.timerService.saveTimerStates();
   }
@@ -298,6 +342,7 @@ export class PomodoroComponent implements OnDestroy {
       const stored = localStorage.getItem('pomodoroSettings');
       if (stored) {
         const settings = JSON.parse(stored);
+        // Only update the settings, don't apply them to the active timer
         this.customWorkTime.set(settings.workTime || 25);
         this.customShortBreak.set(settings.shortBreak || 5);
         this.customLongBreak.set(settings.longBreak || 15);
