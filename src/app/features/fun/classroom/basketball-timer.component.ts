@@ -14,6 +14,8 @@ import { TimeDisplayComponent } from '../../../shared/components/time-display/ti
 import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
 import { AnalyticsService } from '../../../core/services/analytics.service';
 import { SeoService } from '../../../core/services/seo.service';
+import { TimerService } from '../../../core/services/timer.service';
+import { BackgroundTimerService } from '../../../core/services/background-timer.service';
 
 @Component({
   selector: 'app-basketball-timer',
@@ -616,23 +618,26 @@ import { SeoService } from '../../../core/services/seo.service';
   `]
 })
 export class BasketballTimerComponent implements OnInit {
-  periodDuration = signal(12 * 60 * 1000); // 12 minutes default
-  timeRemaining = signal(12 * 60 * 1000);
-  isRunning = signal(false);
-  currentPeriod = signal(1);
-  totalPeriods = signal(4);
-  homeScore = signal(0);
-  awayScore = signal(0);
-  
   periodMinutes = 12;
   setupPeriods = 4;
-  
-  private intervalId: any;
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
   seoService = inject(SeoService);
   analyticsService = inject(AnalyticsService);
+  timerService = inject(TimerService);
+  backgroundTimerService = inject(BackgroundTimerService);
+
+  // Use centralized state from TimerService
+  basketballTimerState = this.timerService.basketballTimerState;
+  
+  periodDuration = computed(() => this.basketballTimerState().periodDuration);
+  timeRemaining = computed(() => this.basketballTimerState().timeRemaining);
+  isRunning = computed(() => this.basketballTimerState().isRunning);
+  currentPeriod = computed(() => this.basketballTimerState().currentPeriod);
+  totalPeriods = computed(() => this.basketballTimerState().totalPeriods);
+  homeScore = computed(() => this.basketballTimerState().homeScore);
+  awayScore = computed(() => this.basketballTimerState().awayScore);
 
   formattedTime = computed(() => {
     const totalSeconds = Math.ceil(this.timeRemaining() / 1000);
@@ -662,6 +667,24 @@ export class BasketballTimerComponent implements OnInit {
     return this.currentPeriod() > this.totalPeriods();
   });
 
+  private lastCompletionTimestamp = 0;
+
+  constructor() {
+    // Effect to handle period completion with intelligent duplicate prevention
+    effect(() => {
+      const periodComplete = this.isPeriodComplete();
+      const timeRemaining = this.timeRemaining();
+      const currentTime = Date.now();
+      
+      // Only trigger completion if actually completed (time reached 0) and not a stale state
+      if (periodComplete && timeRemaining === 0 &&
+          (currentTime - this.lastCompletionTimestamp) > 5000) {
+        this.lastCompletionTimestamp = currentTime;
+        this.onPeriodComplete();
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit(): void {
     // Initialize with default settings
     this.applySettings();
@@ -672,13 +695,8 @@ export class BasketballTimerComponent implements OnInit {
 
   applySettings(): void {
     const timeMs = this.periodMinutes * 60 * 1000;
-    this.periodDuration.set(timeMs);
-    this.timeRemaining.set(timeMs);
-    this.totalPeriods.set(this.setupPeriods);
-    
-    if (this.currentPeriod() > this.setupPeriods) {
-      this.currentPeriod.set(this.setupPeriods);
-    }
+    this.timerService.setupBasketballTimer(timeMs, this.setupPeriods);
+    this.timerService.saveTimerStates();
     
     // Update SEO metadata
     this.seoService.updateTimerToolSeo('Basketball Timer', `${this.periodMinutes} Minute`);
@@ -695,43 +713,20 @@ export class BasketballTimerComponent implements OnInit {
 
   startPeriod(): void {
     if (this.timeRemaining() > 0) {
-      this.isRunning.set(true);
+      this.timerService.startBasketballTimer();
       this.audioService.playSuccess();
+      this.timerService.saveTimerStates();
       
       // Track timer start
       const durationSeconds = Math.ceil(this.periodDuration() / 1000);
       this.analyticsService.trackTimerStart('basketball-timer', durationSeconds);
-      
-      // Start countdown timer
-      this.intervalId = setInterval(() => {
-        const newTime = Math.max(0, this.timeRemaining() - 100);
-        this.timeRemaining.set(newTime);
-        
-        // Play warning sounds at key intervals
-        if (newTime <= 60000 && newTime > 59900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 30000 && newTime > 29900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 10000 && newTime > 9900) {
-          this.audioService.playWarning();
-        }
-        
-        if (newTime === 0) {
-          this.endPeriod();
-          
-          // Track period completion
-          this.analyticsService.trackTimerComplete('basketball-timer-period', durationSeconds);
-        }
-      }, 100);
     }
   }
 
   pausePeriod(): void {
-    this.isRunning.set(false);
+    this.timerService.stopBasketballTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer pause
     const elapsedSeconds = Math.ceil((this.periodDuration() - this.timeRemaining()) / 1000);
@@ -739,23 +734,16 @@ export class BasketballTimerComponent implements OnInit {
   }
 
   resetPeriod(): void {
-    this.isRunning.set(false);
-    this.timeRemaining.set(this.periodDuration());
+    this.timerService.resetBasketballTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer reset
     this.analyticsService.trackTimerReset('basketball-timer');
   }
 
-  endPeriod(): void {
-    this.isRunning.set(false);
+  private onPeriodComplete(): void {
     this.audioService.playPattern('completion');
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
     
     // Track period completion
     const durationSeconds = Math.ceil(this.periodDuration() / 1000);
@@ -773,7 +761,10 @@ export class BasketballTimerComponent implements OnInit {
 
   nextPeriod(): void {
     if (this.currentPeriod() < this.totalPeriods()) {
-      this.currentPeriod.update(p => p + 1);
+      // Move to next period by updating the state manually
+      this.timerService.setupBasketballTimer(this.periodDuration(), this.totalPeriods());
+      this.timerService.updateBasketballScore('home', 0); // Keep current scores
+      this.timerService.updateBasketballScore('away', 0);
       this.resetPeriod();
       
       // Track next period
@@ -785,8 +776,6 @@ export class BasketballTimerComponent implements OnInit {
         verticalPosition: 'top'
       });
     } else {
-      this.currentPeriod.update(p => p + 1);
-      
       // Track game completion
       this.analyticsService.trackTimerComplete('basketball-timer-game-complete', 0);
       
@@ -799,10 +788,7 @@ export class BasketballTimerComponent implements OnInit {
   }
 
   endGame(): void {
-    this.isRunning.set(false);
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.stopBasketballTimer();
     
     const home = this.homeScore();
     const away = this.awayScore();
@@ -829,27 +815,19 @@ export class BasketballTimerComponent implements OnInit {
   }
 
   private resetGame(): void {
-    this.currentPeriod.set(1);
-    this.homeScore.set(0);
-    this.awayScore.set(0);
+    this.timerService.setupBasketballTimer(this.periodDuration(), this.totalPeriods());
     this.resetPeriod();
   }
 
   increaseScore(team: 'home' | 'away'): void {
-    if (team === 'home') {
-      this.homeScore.update(s => s + 1);
-    } else {
-      this.awayScore.update(s => s + 1);
-    }
+    this.timerService.updateBasketballScore(team, 1);
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
   }
 
   decreaseScore(team: 'home' | 'away'): void {
-    if (team === 'home') {
-      this.homeScore.update(s => Math.max(0, s - 1));
-    } else {
-      this.awayScore.update(s => Math.max(0, s - 1));
-    }
+    this.timerService.updateBasketballScore(team, -1);
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
   }
 }

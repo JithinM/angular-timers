@@ -13,6 +13,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
 import { StorageService } from '../../core/services/storage.service';
+import { BackgroundTimerService } from '../../core/services/background-timer.service';
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
@@ -476,12 +477,6 @@ import { SeoService } from '../../core/services/seo.service';
   `]
 })
 export class EggTimerComponent implements OnInit {
-  initialTime = signal(0);
-  timeRemaining = signal(0);
-  isRunning = signal(false);
-  isCompleted = signal(false);
-  selectedPreset = signal<string | null>(null);
-  
   customMinutes = 5;
   customSeconds = 0;
 
@@ -512,9 +507,19 @@ export class EggTimerComponent implements OnInit {
   timerService = inject(TimerService);
   audioService = inject(AudioService);
   storageService = inject(StorageService);
+  backgroundTimerService = inject(BackgroundTimerService);
   analyticsService = inject(AnalyticsService);
   snackBar = inject(MatSnackBar);
   seoService = inject(SeoService);
+
+  // Use centralized state from TimerService
+  eggTimerState = this.timerService.eggTimerState;
+  
+  initialTime = computed(() => this.eggTimerState().initialTime);
+  timeRemaining = computed(() => this.eggTimerState().timeRemaining);
+  isRunning = computed(() => this.eggTimerState().isRunning);
+  isCompleted = computed(() => this.eggTimerState().isCompleted);
+  selectedPreset = computed(() => this.eggTimerState().selectedPreset);
 
   progress = computed(() => {
     const initial = this.initialTime();
@@ -558,10 +563,8 @@ export class EggTimerComponent implements OnInit {
 
   selectPreset(preset: any): void {
     const timeMs = preset.time * 60 * 1000;
-    this.initialTime.set(timeMs);
-    this.timeRemaining.set(timeMs);
-    this.selectedPreset.set(preset.name);
-    this.isCompleted.set(false);
+    this.timerService.setEggTimerTime(timeMs, preset.name);
+    this.timerService.saveTimerStates();
     
     // Update SEO metadata
     this.seoService.updateTimerToolSeo('Egg Timer', `${preset.time} Minute`);
@@ -570,10 +573,8 @@ export class EggTimerComponent implements OnInit {
   setCustomTime(): void {
     const timeMs = (this.customMinutes * 60 + this.customSeconds) * 1000;
     if (timeMs > 0) {
-      this.initialTime.set(timeMs);
-      this.timeRemaining.set(timeMs);
-      this.selectedPreset.set(null);
-      this.isCompleted.set(false);
+      this.timerService.setEggTimerTime(timeMs);
+      this.timerService.saveTimerStates();
       
       // Update SEO metadata
       const minutes = this.customMinutes;
@@ -594,42 +595,20 @@ export class EggTimerComponent implements OnInit {
 
   startTimer(): void {
     if (this.timeRemaining() > 0) {
-      this.isRunning.set(true);
+      this.timerService.startEggTimer();
       this.audioService.playSuccess();
+      this.timerService.saveTimerStates();
       
       // Track timer start
       const durationSeconds = Math.floor(this.initialTime() / 1000);
       this.analyticsService.trackTimerStart('egg-timer', durationSeconds);
-      
-      // Start countdown timer
-      const interval = setInterval(() => {
-        if (!this.isRunning()) {
-          // Track timer pause
-          const elapsedSeconds = Math.floor((this.initialTime() - this.timeRemaining()) / 1000);
-          this.analyticsService.trackTimerPause('egg-timer', elapsedSeconds);
-          clearInterval(interval);
-          return;
-        }
-        
-        const newTime = Math.max(0, this.timeRemaining() - 100);
-        this.timeRemaining.set(newTime);
-        
-        if (newTime === 0) {
-          this.isRunning.set(false);
-          this.isCompleted.set(true);
-          clearInterval(interval);
-          this.onTimerComplete();
-          
-          // Track timer completion
-          this.analyticsService.trackTimerComplete('egg-timer', durationSeconds);
-        }
-      }, 100);
     }
   }
 
   pauseTimer(): void {
-    this.isRunning.set(false);
+    this.timerService.stopEggTimer();
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
     
     // Track timer pause
     const elapsedSeconds = Math.floor((this.initialTime() - this.timeRemaining()) / 1000);
@@ -637,17 +616,49 @@ export class EggTimerComponent implements OnInit {
   }
 
   resetTimer(): void {
-    this.isRunning.set(false);
-    this.isCompleted.set(false);
-    this.timeRemaining.set(this.initialTime());
+    this.timerService.resetEggTimer();
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
     
     // Track timer reset
     this.analyticsService.trackTimerReset('egg-timer');
   }
 
+  private wasCompleted = false;
+  private lastCompletionTimestamp = 0;
+
+  constructor() {
+    // Effect to handle timer completion
+    effect(() => {
+      const completed = this.isCompleted();
+      const timeRemaining = this.timeRemaining();
+      const isRunning = this.isRunning();
+      
+      // Only trigger completion if:
+      // 1. Timer is completed
+      // 2. We haven't already handled this completion
+      // 3. Time remaining is 0 (ensures it actually completed, not just restored as completed)
+      // 4. Timer was recently running (prevents stale completion notifications)
+      if (completed && !this.wasCompleted && timeRemaining === 0) {
+        const now = Date.now();
+        // Prevent duplicate notifications within 5 seconds and ensure timer was active recently
+        if (now - this.lastCompletionTimestamp > 5000) {
+          this.wasCompleted = true;
+          this.lastCompletionTimestamp = now;
+          this.onTimerComplete();
+        }
+      } else if (!completed) {
+        this.wasCompleted = false;
+      }
+    }, { allowSignalWrites: true });
+  }
+
   private onTimerComplete(): void {
     this.audioService.playPattern('completion');
+    
+    // Track timer completion
+    const durationSeconds = Math.floor(this.initialTime() / 1000);
+    this.analyticsService.trackTimerComplete('egg-timer', durationSeconds);
     
     // Show completion notification
     this.snackBar.open('🥚 Your eggs are ready!', 'Enjoy', {

@@ -56,6 +56,70 @@ export interface PomodoroState {
   }[];
 }
 
+export interface EggTimerState {
+  initialTime: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  isCompleted: boolean;
+  selectedPreset: string | null;
+}
+
+export interface BombTimerState {
+  initialTime: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  isExploded: boolean;
+  isDefused: boolean;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface MeditationTimerState {
+  breatheInDuration: number;
+  breatheOutDuration: number;
+  totalCycles: number;
+  currentPhase: 'in' | 'out' | 'hold';
+  currentCycle: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  isCompleted: boolean;
+  enableSound: boolean;
+}
+
+export interface BasketballTimerState {
+  periodDuration: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  currentPeriod: number;
+  totalPeriods: number;
+  homeScore: number;
+  awayScore: number;
+}
+
+export interface HockeyTimerState {
+  periodDuration: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  currentPeriod: number;
+  totalPeriods: number;
+  homePenalties: number;
+  awayPenalties: number;
+}
+
+export interface PresentationSegment {
+  id: string;
+  title: string;
+  duration: number;
+  completed: boolean;
+}
+
+export interface PresentationTimerState {
+  segments: PresentationSegment[];
+  currentSegmentIndex: number;
+  timeRemaining: number;
+  isRunning: boolean;
+  isPresentationComplete: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -117,6 +181,69 @@ export class TimerService {
     sessionHistory: []
   });
 
+  // Egg timer signals
+  private readonly _eggTimerState = signal<EggTimerState>({
+    initialTime: 0,
+    timeRemaining: 0,
+    isRunning: false,
+    isCompleted: false,
+    selectedPreset: null
+  });
+
+  // Bomb timer signals
+  private readonly _bombTimerState = signal<BombTimerState>({
+    initialTime: 30000, // 30 seconds default
+    timeRemaining: 30000,
+    isRunning: false,
+    isExploded: false,
+    isDefused: false,
+    difficulty: 'medium'
+  });
+
+  // Meditation timer signals
+  private readonly _meditationTimerState = signal<MeditationTimerState>({
+    breatheInDuration: 4,
+    breatheOutDuration: 6,
+    totalCycles: 10,
+    currentPhase: 'in',
+    currentCycle: 1,
+    timeRemaining: 0,
+    isRunning: false,
+    isCompleted: false,
+    enableSound: true
+  });
+
+  // Basketball timer signals
+  private readonly _basketballTimerState = signal<BasketballTimerState>({
+    periodDuration: 12 * 60 * 1000, // 12 minutes default
+    timeRemaining: 12 * 60 * 1000,
+    isRunning: false,
+    currentPeriod: 1,
+    totalPeriods: 4,
+    homeScore: 0,
+    awayScore: 0
+  });
+
+  // Hockey timer signals
+  private readonly _hockeyTimerState = signal<HockeyTimerState>({
+    periodDuration: 15 * 60 * 1000, // 15 minutes default
+    timeRemaining: 15 * 60 * 1000,
+    isRunning: false,
+    currentPeriod: 1,
+    totalPeriods: 3,
+    homePenalties: 0,
+    awayPenalties: 0
+  });
+
+  // Presentation timer signals
+  private readonly _presentationTimerState = signal<PresentationTimerState>({
+    segments: [],
+    currentSegmentIndex: 0,
+    timeRemaining: 0,
+    isRunning: false,
+    isPresentationComplete: false
+  });
+
   // Interval reference for timer updates
   private intervalId: number | null = null;
 
@@ -125,6 +252,12 @@ export class TimerService {
   readonly countdownState = this._countdownState.asReadonly();
   readonly intervalState = this._intervalState.asReadonly();
   readonly pomodoroState = this._pomodoroState.asReadonly();
+  readonly eggTimerState = this._eggTimerState.asReadonly();
+  readonly bombTimerState = this._bombTimerState.asReadonly();
+  readonly meditationTimerState = this._meditationTimerState.asReadonly();
+  readonly basketballTimerState = this._basketballTimerState.asReadonly();
+  readonly hockeyTimerState = this._hockeyTimerState.asReadonly();
+  readonly presentationTimerState = this._presentationTimerState.asReadonly();
 
   // Computed signals for formatted time displays
   readonly formattedStopwatchTime = computed(() => 
@@ -181,10 +314,18 @@ export class TimerService {
       const countdown = this._countdownState();
       const interval = this._intervalState();
       const pomodoro = this._pomodoroState();
+      const eggTimer = this._eggTimerState();
+      const bombTimer = this._bombTimerState();
+      const meditationTimer = this._meditationTimerState();
+      const basketballTimer = this._basketballTimerState();
+      const hockeyTimer = this._hockeyTimerState();
+      const presentationTimer = this._presentationTimerState();
       
       // Use untracked to prevent change detection issues during SSR
       untracked(() => {
-        if (stopwatch.isRunning || countdown.isRunning || interval.isRunning || pomodoro.isRunning) {
+        if (stopwatch.isRunning || countdown.isRunning || interval.isRunning || pomodoro.isRunning ||
+            eggTimer.isRunning || bombTimer.isRunning || meditationTimer.isRunning ||
+            basketballTimer.isRunning || hockeyTimer.isRunning || presentationTimer.isRunning) {
           this.startInterval();
         } else {
           this.stopInterval();
@@ -644,6 +785,375 @@ export class TimerService {
     }
   }
 
+  // Egg Timer methods
+  setEggTimerTime(milliseconds: number, preset?: string): void {
+    this._eggTimerState.update(state => ({
+      ...state,
+      initialTime: milliseconds,
+      timeRemaining: milliseconds,
+      isCompleted: false,
+      selectedPreset: preset || null
+    }));
+  }
+
+  startEggTimer(): void {
+    const state = this._eggTimerState();
+    if (state.timeRemaining > 0) {
+      this._eggTimerState.update(current => ({
+        ...current,
+        isRunning: true
+      }));
+      this.saveTimerStates();
+    }
+  }
+
+  stopEggTimer(): void {
+    this._eggTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetEggTimer(): void {
+    const initialTime = this._eggTimerState().initialTime;
+    this._eggTimerState.update(state => ({
+      ...state,
+      timeRemaining: initialTime,
+      isRunning: false,
+      isCompleted: false
+    }));
+    this.saveTimerStates();
+  }
+
+  clearEggTimerCompletion(): void {
+    this._eggTimerState.update(state => ({
+      ...state,
+      isCompleted: false
+    }));
+  }
+
+  // Bomb Timer methods
+  setBombTimerTime(milliseconds: number, difficulty: 'easy' | 'medium' | 'hard'): void {
+    this._bombTimerState.update(state => ({
+      ...state,
+      initialTime: milliseconds,
+      timeRemaining: milliseconds,
+      isExploded: false,
+      isDefused: false,
+      difficulty
+    }));
+  }
+
+  startBombTimer(): void {
+    const state = this._bombTimerState();
+    if (state.timeRemaining > 0) {
+      this._bombTimerState.update(current => ({
+        ...current,
+        isRunning: true,
+        isExploded: false,
+        isDefused: false
+      }));
+      this.saveTimerStates();
+    }
+  }
+
+  stopBombTimer(): void {
+    this._bombTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetBombTimer(): void {
+    const initialTime = this._bombTimerState().initialTime;
+    this._bombTimerState.update(state => ({
+      ...state,
+      timeRemaining: initialTime,
+      isRunning: false,
+      isExploded: false,
+      isDefused: false
+    }));
+    this.saveTimerStates();
+  }
+
+  defuseBomb(): void {
+    this._bombTimerState.update(state => ({
+      ...state,
+      isRunning: false,
+      isDefused: true
+    }));
+    this.saveTimerStates();
+  }
+
+  clearBombTimerCompletion(): void {
+    this._bombTimerState.update(state => ({
+      ...state,
+      isExploded: false,
+      isDefused: false
+    }));
+  }
+
+  // Meditation Timer methods
+  setupMeditationTimer(breatheInDuration: number, breatheOutDuration: number, totalCycles: number, enableSound: boolean): void {
+    this._meditationTimerState.update(state => ({
+      ...state,
+      breatheInDuration,
+      breatheOutDuration,
+      totalCycles,
+      enableSound,
+      currentPhase: 'in',
+      currentCycle: 1,
+      timeRemaining: breatheInDuration * 1000,
+      isRunning: false,
+      isCompleted: false
+    }));
+  }
+
+  startMeditationTimer(): void {
+    const state = this._meditationTimerState();
+    
+    this._meditationTimerState.update(current => ({
+      ...current,
+      isRunning: true,
+      isCompleted: false,
+      currentPhase: 'in',
+      timeRemaining: state.breatheInDuration * 1000
+    }));
+    this.saveTimerStates();
+  }
+
+  stopMeditationTimer(): void {
+    this._meditationTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetMeditationTimer(): void {
+    const state = this._meditationTimerState();
+    this._meditationTimerState.update(current => ({
+      ...current,
+      currentPhase: 'in',
+      currentCycle: 1,
+      timeRemaining: state.breatheInDuration * 1000,
+      isRunning: false,
+      isCompleted: false
+    }));
+    this.saveTimerStates();
+  }
+
+  clearMeditationTimerCompletion(): void {
+    this._meditationTimerState.update(state => ({
+      ...state,
+      isCompleted: false
+    }));
+  }
+
+  // Basketball Timer methods
+  setupBasketballTimer(periodDuration: number, totalPeriods: number): void {
+    this._basketballTimerState.update(state => ({
+      ...state,
+      periodDuration,
+      timeRemaining: periodDuration,
+      totalPeriods,
+      currentPeriod: 1,
+      isRunning: false,
+      homeScore: 0,
+      awayScore: 0
+    }));
+  }
+
+  startBasketballTimer(): void {
+    const state = this._basketballTimerState();
+    if (state.timeRemaining > 0) {
+      this._basketballTimerState.update(current => ({
+        ...current,
+        isRunning: true
+      }));
+      this.saveTimerStates();
+    }
+  }
+
+  stopBasketballTimer(): void {
+    this._basketballTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetBasketballTimer(): void {
+    const periodDuration = this._basketballTimerState().periodDuration;
+    this._basketballTimerState.update(state => ({
+      ...state,
+      timeRemaining: periodDuration,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  updateBasketballScore(team: 'home' | 'away', increment: number): void {
+    this._basketballTimerState.update(state => ({
+      ...state,
+      [team === 'home' ? 'homeScore' : 'awayScore']: Math.max(0, (team === 'home' ? state.homeScore : state.awayScore) + increment)
+    }));
+  }
+
+  // Hockey Timer methods
+  setupHockeyTimer(periodDuration: number, totalPeriods: number): void {
+    this._hockeyTimerState.update(state => ({
+      ...state,
+      periodDuration,
+      timeRemaining: periodDuration,
+      totalPeriods,
+      currentPeriod: 1,
+      isRunning: false,
+      homePenalties: 0,
+      awayPenalties: 0
+    }));
+  }
+
+  startHockeyTimer(): void {
+    const state = this._hockeyTimerState();
+    if (state.timeRemaining > 0) {
+      this._hockeyTimerState.update(current => ({
+        ...current,
+        isRunning: true
+      }));
+      this.saveTimerStates();
+    }
+  }
+
+  stopHockeyTimer(): void {
+    this._hockeyTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetHockeyTimer(): void {
+    const periodDuration = this._hockeyTimerState().periodDuration;
+    this._hockeyTimerState.update(state => ({
+      ...state,
+      timeRemaining: periodDuration,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  updateHockeyPenalties(team: 'home' | 'away', increment: number): void {
+    this._hockeyTimerState.update(state => ({
+      ...state,
+      [team === 'home' ? 'homePenalties' : 'awayPenalties']: Math.max(0, (team === 'home' ? state.homePenalties : state.awayPenalties) + increment)
+    }));
+  }
+
+  // Presentation Timer methods
+  setupPresentationTimer(segments: PresentationSegment[]): void {
+    this._presentationTimerState.update(state => ({
+      ...state,
+      segments,
+      currentSegmentIndex: 0,
+      timeRemaining: segments.length > 0 ? segments[0].duration * 1000 : 0,
+      isRunning: false,
+      isPresentationComplete: false
+    }));
+  }
+
+  startPresentationTimer(): void {
+    const state = this._presentationTimerState();
+    if (state.timeRemaining > 0) {
+      this._presentationTimerState.update(current => ({
+        ...current,
+        isRunning: true
+      }));
+      this.saveTimerStates();
+    }
+  }
+
+  stopPresentationTimer(): void {
+    this._presentationTimerState.update(state => ({
+      ...state,
+      isRunning: false
+    }));
+    this.saveTimerStates();
+  }
+
+  resetPresentationTimer(): void {
+    const state = this._presentationTimerState();
+    const currentSegment = state.segments[state.currentSegmentIndex];
+    this._presentationTimerState.update(current => ({
+      ...current,
+      timeRemaining: currentSegment ? currentSegment.duration * 1000 : 0,
+      isRunning: false,
+      isPresentationComplete: false
+    }));
+    this.saveTimerStates();
+  }
+
+  nextPresentationSegment(): void {
+    const state = this._presentationTimerState();
+    if (state.currentSegmentIndex < state.segments.length - 1) {
+      const nextIndex = state.currentSegmentIndex + 1;
+      const nextSegment = state.segments[nextIndex];
+      this._presentationTimerState.update(current => ({
+        ...current,
+        currentSegmentIndex: nextIndex,
+        timeRemaining: nextSegment.duration * 1000,
+        segments: current.segments.map((seg, idx) =>
+          idx === current.currentSegmentIndex ? { ...seg, completed: true } : seg
+        )
+      }));
+    } else {
+      this._presentationTimerState.update(current => ({
+        ...current,
+        isPresentationComplete: true,
+        isRunning: false,
+        segments: current.segments.map((seg, idx) =>
+          idx === current.currentSegmentIndex ? { ...seg, completed: true } : seg
+        )
+      }));
+    }
+  }
+
+  clearPresentationTimerCompletion(): void {
+    this._presentationTimerState.update(state => ({
+      ...state,
+      isPresentationComplete: false
+    }));
+  }
+
+  /**
+   * Clear all completion states to prevent stale notifications
+   */
+  clearAllCompletionStates(): void {
+    this.clearEggTimerCompletion();
+    this.clearBombTimerCompletion();
+    this.clearMeditationTimerCompletion();
+    this.clearPresentationTimerCompletion();
+    
+    // Clear interval and pomodoro completion states
+    this._intervalState.update(state => ({
+      ...state,
+      isCompleted: false
+    }));
+    
+    this._pomodoroState.update(state => ({
+      ...state,
+      isCompleted: false
+    }));
+    
+    // Clear countdown expired state
+    this._countdownState.update(state => ({
+      ...state,
+      isExpired: false
+    }));
+  }
+
   // Private methods
   private startInterval(): void {
     if (this.intervalId) return;
@@ -694,6 +1204,180 @@ export class TimerService {
 
     // Update pomodoro timer
     this.updatePomodoroTimer();
+
+    // Update egg timer
+    this.updateEggTimer();
+
+    // Update bomb timer
+    this.updateBombTimer();
+
+    // Update meditation timer
+    this.updateMeditationTimer();
+
+    // Update basketball timer
+    this.updateBasketballTimer();
+
+    // Update hockey timer
+    this.updateHockeyTimer();
+
+    // Update presentation timer
+    this.updatePresentationTimer();
+  }
+
+  private updateEggTimer(): void {
+    const state = this._eggTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      this._eggTimerState.update(current => ({
+        ...current,
+        timeRemaining: 0,
+        isRunning: false,
+        isCompleted: true
+      }));
+      this.notificationsService.sendTimerCompletion('Egg Timer');
+    } else {
+      this._eggTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
+  }
+
+  private updateBombTimer(): void {
+    const state = this._bombTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      this._bombTimerState.update(current => ({
+        ...current,
+        timeRemaining: 0,
+        isRunning: false,
+        isExploded: true
+      }));
+      this.notificationsService.sendTimerCompletion('Bomb Timer');
+    } else {
+      this._bombTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
+  }
+
+  private updateMeditationTimer(): void {
+    const state = this._meditationTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      // Phase completed
+      if (state.currentPhase === 'in') {
+        // Switch to breathe out
+        this._meditationTimerState.update(current => ({
+          ...current,
+          currentPhase: 'out',
+          timeRemaining: state.breatheOutDuration * 1000
+        }));
+      } else {
+        // Breathe out completed, move to next cycle or complete
+        if (state.currentCycle >= state.totalCycles) {
+          this._meditationTimerState.update(current => ({
+            ...current,
+            isRunning: false,
+            isCompleted: true,
+            timeRemaining: 0
+          }));
+          this.notificationsService.sendTimerCompletion('Meditation Timer');
+        } else {
+          this._meditationTimerState.update(current => ({
+            ...current,
+            currentCycle: current.currentCycle + 1,
+            currentPhase: 'in',
+            timeRemaining: state.breatheInDuration * 1000
+          }));
+        }
+      }
+    } else {
+      this._meditationTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
+  }
+
+  private updateBasketballTimer(): void {
+    const state = this._basketballTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      this._basketballTimerState.update(current => ({
+        ...current,
+        timeRemaining: 0,
+        isRunning: false
+      }));
+      this.notificationsService.sendTimerCompletion('Basketball Period');
+    } else {
+      this._basketballTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
+  }
+
+  private updateHockeyTimer(): void {
+    const state = this._hockeyTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      this._hockeyTimerState.update(current => ({
+        ...current,
+        timeRemaining: 0,
+        isRunning: false
+      }));
+      this.notificationsService.sendTimerCompletion('Hockey Period');
+    } else {
+      this._hockeyTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
+  }
+
+  private updatePresentationTimer(): void {
+    const state = this._presentationTimerState();
+    if (!state.isRunning) return;
+
+    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    
+    if (newRemaining === 0) {
+      // Segment completed
+      const currentSegment = state.segments[state.currentSegmentIndex];
+      if (currentSegment) {
+        this._presentationTimerState.update(current => ({
+          ...current,
+          timeRemaining: 0,
+          isRunning: false,
+          segments: current.segments.map((seg, idx) =>
+            idx === current.currentSegmentIndex ? { ...seg, completed: true } : seg
+          )
+        }));
+        this.notificationsService.sendTimerCompletion(`Presentation Segment: ${currentSegment.title}`);
+      }
+    } else {
+      this._presentationTimerState.update(current => ({
+        ...current,
+        timeRemaining: newRemaining
+      }));
+    }
   }
 
   /**
@@ -705,6 +1389,12 @@ export class TimerService {
       countdown: this._countdownState(),
       interval: this._intervalState(),
       pomodoro: this._pomodoroState(),
+      eggTimer: this._eggTimerState(),
+      bombTimer: this._bombTimerState(),
+      meditationTimer: this._meditationTimerState(),
+      basketballTimer: this._basketballTimerState(),
+      hockeyTimer: this._hockeyTimerState(),
+      presentationTimer: this._presentationTimerState(),
       timestamp: Date.now()
     };
 
@@ -748,18 +1438,18 @@ export class TimerService {
     const timeElapsed = Date.now() - states.timestamp;
 
     // Restore stopwatch state
-    if (states.stopwatch.isRunning) {
+    if (states.stopwatch?.isRunning) {
       this._stopwatchState.update(state => ({
         ...state,
         ...states.stopwatch,
         timeElapsed: states.stopwatch.timeElapsed + timeElapsed
       }));
-    } else {
+    } else if (states.stopwatch) {
       this._stopwatchState.set(states.stopwatch);
     }
 
     // Restore countdown state
-    if (states.countdown.isRunning) {
+    if (states.countdown?.isRunning) {
       const newTimeRemaining = Math.max(0, states.countdown.timeRemaining - timeElapsed);
       this._countdownState.update(state => ({
         ...state,
@@ -767,32 +1457,106 @@ export class TimerService {
         timeRemaining: newTimeRemaining,
         isExpired: newTimeRemaining === 0
       }));
-    } else {
+    } else if (states.countdown) {
       this._countdownState.set(states.countdown);
     }
 
     // Restore interval state
-    if (states.interval.isRunning) {
+    if (states.interval?.isRunning) {
       const newTimeRemaining = Math.max(0, states.interval.timeRemaining - timeElapsed);
       this._intervalState.update(state => ({
         ...state,
         ...states.interval,
         timeRemaining: newTimeRemaining
       }));
-    } else {
+    } else if (states.interval) {
       this._intervalState.set(states.interval);
     }
 
     // Restore pomodoro state
-    if (states.pomodoro.isRunning) {
+    if (states.pomodoro?.isRunning) {
       const newTimeRemaining = Math.max(0, states.pomodoro.timeRemaining - timeElapsed);
       this._pomodoroState.update(state => ({
         ...state,
         ...states.pomodoro,
         timeRemaining: newTimeRemaining
       }));
-    } else {
+    } else if (states.pomodoro) {
       this._pomodoroState.set(states.pomodoro);
+    }
+
+    // Restore egg timer state
+    if (states.eggTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.eggTimer.timeRemaining - timeElapsed);
+      this._eggTimerState.update(state => ({
+        ...state,
+        ...states.eggTimer,
+        timeRemaining: newTimeRemaining,
+        isCompleted: newTimeRemaining === 0
+      }));
+    } else if (states.eggTimer) {
+      this._eggTimerState.set(states.eggTimer);
+    }
+
+    // Restore bomb timer state
+    if (states.bombTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.bombTimer.timeRemaining - timeElapsed);
+      this._bombTimerState.update(state => ({
+        ...state,
+        ...states.bombTimer,
+        timeRemaining: newTimeRemaining,
+        isExploded: newTimeRemaining === 0
+      }));
+    } else if (states.bombTimer) {
+      this._bombTimerState.set(states.bombTimer);
+    }
+
+    // Restore meditation timer state
+    if (states.meditationTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.meditationTimer.timeRemaining - timeElapsed);
+      this._meditationTimerState.update(state => ({
+        ...state,
+        ...states.meditationTimer,
+        timeRemaining: newTimeRemaining
+      }));
+    } else if (states.meditationTimer) {
+      this._meditationTimerState.set(states.meditationTimer);
+    }
+
+    // Restore basketball timer state
+    if (states.basketballTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.basketballTimer.timeRemaining - timeElapsed);
+      this._basketballTimerState.update(state => ({
+        ...state,
+        ...states.basketballTimer,
+        timeRemaining: newTimeRemaining
+      }));
+    } else if (states.basketballTimer) {
+      this._basketballTimerState.set(states.basketballTimer);
+    }
+
+    // Restore hockey timer state
+    if (states.hockeyTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.hockeyTimer.timeRemaining - timeElapsed);
+      this._hockeyTimerState.update(state => ({
+        ...state,
+        ...states.hockeyTimer,
+        timeRemaining: newTimeRemaining
+      }));
+    } else if (states.hockeyTimer) {
+      this._hockeyTimerState.set(states.hockeyTimer);
+    }
+
+    // Restore presentation timer state
+    if (states.presentationTimer?.isRunning) {
+      const newTimeRemaining = Math.max(0, states.presentationTimer.timeRemaining - timeElapsed);
+      this._presentationTimerState.update(state => ({
+        ...state,
+        ...states.presentationTimer,
+        timeRemaining: newTimeRemaining
+      }));
+    } else if (states.presentationTimer) {
+      this._presentationTimerState.set(states.presentationTimer);
     }
   }
 

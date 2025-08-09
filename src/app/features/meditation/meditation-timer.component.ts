@@ -15,6 +15,7 @@ import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { SeoService } from '../../core/services/seo.service';
+import { BackgroundTimerService } from '../../core/services/background-timer.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 @Component({
@@ -45,6 +46,7 @@ export class MeditationTimerComponent implements OnDestroy {
   private readonly audioService = inject(AudioService);
   private readonly analyticsService = inject(AnalyticsService);
   private readonly seoService = inject(SeoService);
+  private readonly backgroundTimerService = inject(BackgroundTimerService);
 
   // Configuration signals
   readonly breatheInDuration = signal(4); // 4 seconds
@@ -126,6 +128,9 @@ export class MeditationTimerComponent implements OnDestroy {
     const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles();
     this.analyticsService.trackTimerStart('meditation-timer', totalDuration);
     
+    // Save timer state for background persistence
+    this.timerService.saveTimerStates();
+    
     this.intervalId = window.setInterval(() => this.updateTimer(), 10);
   }
 
@@ -171,6 +176,9 @@ export class MeditationTimerComponent implements OnDestroy {
     // Track timer pause
     const elapsedSeconds = Math.floor((Date.now() - this.startTimestamp) / 1000);
     this.analyticsService.trackTimerPause('meditation-timer', elapsedSeconds);
+    
+    // Save timer state for background persistence
+    this.timerService.saveTimerStates();
   }
 
   resetTimer(): void {
@@ -182,6 +190,9 @@ export class MeditationTimerComponent implements OnDestroy {
     
     // Track timer reset
     this.analyticsService.trackTimerReset('meditation-timer');
+    
+    // Save timer state for background persistence
+    this.timerService.saveTimerStates();
   }
 
   private completeTimer(): void {

@@ -14,6 +14,8 @@ import { TimeDisplayComponent } from '../../shared/components/time-display/time-
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 import { SeoService } from '../../core/services/seo.service';
+import { TimerService } from '../../core/services/timer.service';
+import { BackgroundTimerService } from '../../core/services/background-timer.service';
 
 @Component({
   selector: 'app-bomb-timer',
@@ -533,22 +535,25 @@ import { SeoService } from '../../core/services/seo.service';
   `]
 })
 export class BombTimerComponent implements OnInit {
-  initialTime = signal(30000); // 30 seconds default
-  timeRemaining = signal(30000);
-  isRunning = signal(false);
-  isExploded = signal(false);
-  isDefused = signal(false);
-  difficulty = signal<'easy' | 'medium' | 'hard'>('medium');
-  
   setupMinutes = 0;
   setupSeconds = 30;
-  
-  private intervalId: any;
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
   analyticsService = inject(AnalyticsService);
   seoService = inject(SeoService);
+  timerService = inject(TimerService);
+  backgroundTimerService = inject(BackgroundTimerService);
+
+  // Use centralized state from TimerService
+  bombTimerState = this.timerService.bombTimerState;
+  
+  initialTime = computed(() => this.bombTimerState().initialTime);
+  timeRemaining = computed(() => this.bombTimerState().timeRemaining);
+  isRunning = computed(() => this.bombTimerState().isRunning);
+  isExploded = computed(() => this.bombTimerState().isExploded);
+  isDefused = computed(() => this.bombTimerState().isDefused);
+  difficulty = computed(() => this.bombTimerState().difficulty);
 
   serialNumber = computed(() => {
     return 'BMB-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
@@ -575,6 +580,33 @@ export class BombTimerComponent implements OnInit {
     return ((initial - remaining) / initial) * 100;
   });
 
+  private lastExplosionTimestamp = 0;
+  private lastDefuseTimestamp = 0;
+
+  constructor() {
+    // Effect to handle timer completion with intelligent duplicate prevention
+    effect(() => {
+      const exploded = this.isExploded();
+      const defused = this.isDefused();
+      const timeRemaining = this.timeRemaining();
+      const currentTime = Date.now();
+      
+      // Handle explosion - only trigger if actually exploded (time reached 0) and not a stale state
+      if (exploded && timeRemaining === 0 &&
+          (currentTime - this.lastExplosionTimestamp) > 5000) {
+        this.lastExplosionTimestamp = currentTime;
+        this.onBombExploded();
+      }
+      
+      // Handle defusal - only trigger if actually defused and not a stale state
+      if (defused && timeRemaining > 0 &&
+          (currentTime - this.lastDefuseTimestamp) > 5000) {
+        this.lastDefuseTimestamp = currentTime;
+        this.onBombDefused();
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit(): void {
     // Set initial time based on difficulty
     this.setDifficulty(this.difficulty());
@@ -586,10 +618,8 @@ export class BombTimerComponent implements OnInit {
   setBombTime(): void {
     const timeMs = (this.setupMinutes * 60 + this.setupSeconds) * 1000;
     if (timeMs > 0) {
-      this.initialTime.set(timeMs);
-      this.timeRemaining.set(timeMs);
-      this.isExploded.set(false);
-      this.isDefused.set(false);
+      this.timerService.setBombTimerTime(timeMs, this.difficulty());
+      this.timerService.saveTimerStates();
       
       // Update SEO metadata
       const minutes = this.setupMinutes;
@@ -609,8 +639,6 @@ export class BombTimerComponent implements OnInit {
   }
 
   setDifficulty(level: 'easy' | 'medium' | 'hard'): void {
-    this.difficulty.set(level);
-    
     switch (level) {
       case 'easy':
         this.setupMinutes = 0;
@@ -647,45 +675,20 @@ export class BombTimerComponent implements OnInit {
 
   startTimer(): void {
     if (this.timeRemaining() > 0) {
-      this.isRunning.set(true);
-      this.isExploded.set(false);
-      this.isDefused.set(false);
+      this.timerService.startBombTimer();
       this.audioService.playSuccess();
+      this.timerService.saveTimerStates();
       
       // Track timer start
       const durationSeconds = Math.ceil(this.initialTime() / 1000);
       this.analyticsService.trackTimerStart('bomb-timer', durationSeconds);
-      
-      // Start countdown timer
-      this.intervalId = setInterval(() => {
-        const newTime = Math.max(0, this.timeRemaining() - 100);
-        this.timeRemaining.set(newTime);
-        
-        // Play warning sounds at key intervals
-        if (newTime <= 10000 && newTime > 9900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 5000 && newTime > 4900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 1000 && newTime > 900) {
-          this.audioService.playWarning();
-        }
-        
-        if (newTime === 0) {
-          this.explodeBomb();
-          
-          // Track timer completion (explosion)
-          this.analyticsService.trackTimerComplete('bomb-timer', durationSeconds);
-        }
-      }, 100);
     }
   }
 
   pauseTimer(): void {
-    this.isRunning.set(false);
+    this.timerService.stopBombTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer pause
     const elapsedSeconds = Math.ceil((this.initialTime() - this.timeRemaining()) / 1000);
@@ -693,14 +696,9 @@ export class BombTimerComponent implements OnInit {
   }
 
   resetTimer(): void {
-    this.isRunning.set(false);
-    this.isExploded.set(false);
-    this.isDefused.set(false);
-    this.timeRemaining.set(this.initialTime());
+    this.timerService.resetBombTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer reset
     this.analyticsService.trackTimerReset('bomb-timer');
@@ -708,33 +706,18 @@ export class BombTimerComponent implements OnInit {
 
   defuseBomb(): void {
     if (this.isRunning()) {
-      this.isRunning.set(false);
-      this.isDefused.set(true);
+      this.timerService.defuseBomb();
       this.audioService.playPattern('success');
-      if (this.intervalId) {
-        clearInterval(this.intervalId);
-      }
+      this.timerService.saveTimerStates();
       
       // Track successful defuse
       const durationSeconds = Math.ceil(this.initialTime() / 1000);
       this.analyticsService.trackTimerComplete('bomb-timer-defuse', durationSeconds);
-      
-      // Show success notification
-      this.snackBar.open('✅ Bomb defused! You saved the day!', 'Awesome', {
-        duration: 5000,
-        horizontalPosition: 'center',
-        verticalPosition: 'top'
-      });
     }
   }
 
-  private explodeBomb(): void {
-    this.isRunning.set(false);
-    this.isExploded.set(true);
+  private onBombExploded(): void {
     this.audioService.playPattern('error');
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
     
     // Track bomb explosion
     const durationSeconds = Math.ceil(this.initialTime() / 1000);
@@ -747,6 +730,15 @@ export class BombTimerComponent implements OnInit {
       verticalPosition: 'top'
     }).onAction().subscribe(() => {
       this.resetTimer();
+    });
+  }
+
+  private onBombDefused(): void {
+    // Show success notification
+    this.snackBar.open('✅ Bomb defused! You saved the day!', 'Awesome', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top'
     });
   }
 }

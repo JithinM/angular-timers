@@ -14,6 +14,8 @@ import { TimeDisplayComponent } from '../../../shared/components/time-display/ti
 import { AdSlotComponent } from '../../../shared/components/ad-slot/ad-slot.component';
 import { AnalyticsService } from '../../../core/services/analytics.service';
 import { SeoService } from '../../../core/services/seo.service';
+import { TimerService } from '../../../core/services/timer.service';
+import { BackgroundTimerService } from '../../../core/services/background-timer.service';
 
 @Component({
   selector: 'app-hockey-timer',
@@ -658,23 +660,26 @@ import { SeoService } from '../../../core/services/seo.service';
   `]
 })
 export class HockeyTimerComponent implements OnInit {
-  periodDuration = signal(15 * 60 * 1000); // 15 minutes default
-  timeRemaining = signal(15 * 60 * 1000);
-  isRunning = signal(false);
-  currentPeriod = signal(1);
-  totalPeriods = signal(3);
-  homePenalties = signal(0);
-  awayPenalties = signal(0);
-  
   periodMinutes = 15;
   setupPeriods = 3;
-  
-  private intervalId: any;
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
   seoService = inject(SeoService);
   analyticsService = inject(AnalyticsService);
+  timerService = inject(TimerService);
+  backgroundTimerService = inject(BackgroundTimerService);
+
+  // Use centralized state from TimerService
+  hockeyTimerState = this.timerService.hockeyTimerState;
+  
+  periodDuration = computed(() => this.hockeyTimerState().periodDuration);
+  timeRemaining = computed(() => this.hockeyTimerState().timeRemaining);
+  isRunning = computed(() => this.hockeyTimerState().isRunning);
+  currentPeriod = computed(() => this.hockeyTimerState().currentPeriod);
+  totalPeriods = computed(() => this.hockeyTimerState().totalPeriods);
+  homePenalties = computed(() => this.hockeyTimerState().homePenalties);
+  awayPenalties = computed(() => this.hockeyTimerState().awayPenalties);
 
   formattedTime = computed(() => {
     const totalSeconds = Math.ceil(this.timeRemaining() / 1000);
@@ -704,6 +709,24 @@ export class HockeyTimerComponent implements OnInit {
     return this.currentPeriod() > this.totalPeriods();
   });
 
+  private lastCompletionTimestamp = 0;
+
+  constructor() {
+    // Effect to handle period completion with intelligent duplicate prevention
+    effect(() => {
+      const periodComplete = this.isPeriodComplete();
+      const timeRemaining = this.timeRemaining();
+      const currentTime = Date.now();
+      
+      // Only trigger completion if actually completed (time reached 0) and not a stale state
+      if (periodComplete && timeRemaining === 0 &&
+          (currentTime - this.lastCompletionTimestamp) > 5000) {
+        this.lastCompletionTimestamp = currentTime;
+        this.onPeriodComplete();
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit(): void {
     // Initialize with default settings
     this.applySettings();
@@ -714,13 +737,8 @@ export class HockeyTimerComponent implements OnInit {
 
   applySettings(): void {
     const timeMs = this.periodMinutes * 60 * 1000;
-    this.periodDuration.set(timeMs);
-    this.timeRemaining.set(timeMs);
-    this.totalPeriods.set(this.setupPeriods);
-    
-    if (this.currentPeriod() > this.setupPeriods) {
-      this.currentPeriod.set(this.setupPeriods);
-    }
+    this.timerService.setupHockeyTimer(timeMs, this.setupPeriods);
+    this.timerService.saveTimerStates();
     
     // Update SEO metadata
     this.seoService.updateTimerToolSeo('Hockey Timer', `${this.periodMinutes} Minute`);
@@ -737,43 +755,20 @@ export class HockeyTimerComponent implements OnInit {
 
   startPeriod(): void {
     if (this.timeRemaining() > 0) {
-      this.isRunning.set(true);
+      this.timerService.startHockeyTimer();
       this.audioService.playSuccess();
+      this.timerService.saveTimerStates();
       
       // Track timer start
       const durationSeconds = Math.ceil(this.periodDuration() / 1000);
       this.analyticsService.trackTimerStart('hockey-timer', durationSeconds);
-      
-      // Start countdown timer
-      this.intervalId = setInterval(() => {
-        const newTime = Math.max(0, this.timeRemaining() - 100);
-        this.timeRemaining.set(newTime);
-        
-        // Play warning sounds at key intervals
-        if (newTime <= 60000 && newTime > 59900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 30000 && newTime > 29900) {
-          this.audioService.playWarning();
-        } else if (newTime <= 10000 && newTime > 9900) {
-          this.audioService.playWarning();
-        }
-        
-        if (newTime === 0) {
-          this.endPeriod();
-          
-          // Track period completion
-          this.analyticsService.trackTimerComplete('hockey-timer-period', durationSeconds);
-        }
-      }, 100);
     }
   }
 
   pausePeriod(): void {
-    this.isRunning.set(false);
+    this.timerService.stopHockeyTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer pause
     const elapsedSeconds = Math.ceil((this.periodDuration() - this.timeRemaining()) / 1000);
@@ -781,23 +776,16 @@ export class HockeyTimerComponent implements OnInit {
   }
 
   resetPeriod(): void {
-    this.isRunning.set(false);
-    this.timeRemaining.set(this.periodDuration());
+    this.timerService.resetHockeyTimer();
     this.audioService.playButtonClick();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.saveTimerStates();
     
     // Track timer reset
     this.analyticsService.trackTimerReset('hockey-timer');
   }
 
-  endPeriod(): void {
-    this.isRunning.set(false);
+  private onPeriodComplete(): void {
     this.audioService.playPattern('completion');
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
     
     // Track period completion
     const durationSeconds = Math.ceil(this.periodDuration() / 1000);
@@ -815,7 +803,10 @@ export class HockeyTimerComponent implements OnInit {
 
   nextPeriod(): void {
     if (this.currentPeriod() < this.totalPeriods()) {
-      this.currentPeriod.update(p => p + 1);
+      // Move to next period by updating the state manually
+      this.timerService.setupHockeyTimer(this.periodDuration(), this.totalPeriods());
+      this.timerService.updateHockeyPenalties('home', 0); // Keep current penalties
+      this.timerService.updateHockeyPenalties('away', 0);
       this.resetPeriod();
       
       // Track next period
@@ -827,8 +818,6 @@ export class HockeyTimerComponent implements OnInit {
         verticalPosition: 'top'
       });
     } else {
-      this.currentPeriod.update(p => p + 1);
-      
       // Track game completion
       this.analyticsService.trackTimerComplete('hockey-timer-game-complete', 0);
       
@@ -841,10 +830,7 @@ export class HockeyTimerComponent implements OnInit {
   }
 
   endGame(): void {
-    this.isRunning.set(false);
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.timerService.stopHockeyTimer();
     
     // Track game end
     this.analyticsService.trackTimerComplete('hockey-timer-game-end', 0);
@@ -859,27 +845,19 @@ export class HockeyTimerComponent implements OnInit {
   }
 
   private resetGame(): void {
-    this.currentPeriod.set(1);
-    this.homePenalties.set(0);
-    this.awayPenalties.set(0);
+    this.timerService.setupHockeyTimer(this.periodDuration(), this.totalPeriods());
     this.resetPeriod();
   }
 
   addPenalty(team: 'home' | 'away'): void {
-    if (team === 'home') {
-      this.homePenalties.update(p => p + 1);
-    } else {
-      this.awayPenalties.update(p => p + 1);
-    }
+    this.timerService.updateHockeyPenalties(team, 1);
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
   }
 
   removePenalty(team: 'home' | 'away'): void {
-    if (team === 'home') {
-      this.homePenalties.update(p => Math.max(0, p - 1));
-    } else {
-      this.awayPenalties.update(p => Math.max(0, p - 1));
-    }
+    this.timerService.updateHockeyPenalties(team, -1);
     this.audioService.playButtonClick();
+    this.timerService.saveTimerStates();
   }
 }
