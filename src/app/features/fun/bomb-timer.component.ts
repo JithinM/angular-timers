@@ -608,8 +608,33 @@ export class BombTimerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Set initial time based on difficulty
-    this.setDifficulty(this.difficulty());
+    // Only set default if no timer is already configured
+    if (this.initialTime() === 0) {
+      // Set initial time based on difficulty without auto-starting
+      const level = this.difficulty();
+      let timeMs: number;
+      
+      switch (level) {
+        case 'easy':
+          this.setupMinutes = 0;
+          this.setupSeconds = 30;
+          timeMs = 30000;
+          break;
+        case 'hard':
+          this.setupMinutes = 0;
+          this.setupSeconds = 5;
+          timeMs = 5000;
+          break;
+        default: // medium
+          this.setupMinutes = 0;
+          this.setupSeconds = 15;
+          timeMs = 15000;
+          break;
+      }
+      
+      this.timerService.setBombTimerTime(timeMs, level);
+      this.timerService.saveTimerStates();
+    }
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Bomb Timer (Medium)', '15 Second');

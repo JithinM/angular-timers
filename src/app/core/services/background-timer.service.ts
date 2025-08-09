@@ -1,9 +1,11 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, DestroyRef } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NotificationsService } from './notifications.service';
 import { StorageService } from './storage.service';
 import { AudioService } from './audio.service';
+import { TimerStoreService, TimerState as StoreTimerState, EggTimerState, BombTimerState } from './timer-store.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +15,8 @@ export class BackgroundTimerService {
   private isBackgroundSyncActive = false;
   private backgroundSyncInterval: number | null = null;
   private router = inject(Router);
+  private timerStore = inject(TimerStoreService);
+  private destroyRef = inject(DestroyRef);
   private currentRoute: string = '';
 
   constructor(
@@ -24,8 +28,18 @@ export class BackgroundTimerService {
     if (typeof window !== 'undefined') {
       this.setupVisibilityHandler();
       this.setupBeforeUnloadHandler();
-      this.setupNavigationHandler();
     }
+
+    // Listen to store changes for background sync management
+    this.timerStore.hasRunningTimers$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(hasRunningTimers => {
+      if (hasRunningTimers && this.isTabHidden()) {
+        this.startBackgroundSync();
+      } else if (!hasRunningTimers) {
+        this.stopBackgroundSync();
+      }
+    });
   }
 
   /**
@@ -43,16 +57,6 @@ export class BackgroundTimerService {
     });
   }
 
-  /**
-   * Setup navigation handler to detect when user navigates between timer pages
-   */
-  private setupNavigationHandler(): void {
-    this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => {
-        this.handleNavigation(event.url);
-      });
-  }
 
   /**
    * Send message to service worker
@@ -70,7 +74,15 @@ export class BackgroundTimerService {
     if (typeof window === 'undefined') return;
 
     window.addEventListener('beforeunload', () => {
-      this.saveTimerState();
+      // Export timer state for persistence on page unload
+      const storeState = this.timerStore.exportState();
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('timer-store-backup', JSON.stringify(storeState));
+        } catch (error) {
+          console.warn('Failed to backup timer store on page unload:', error);
+        }
+      }
     });
   }
 
@@ -78,28 +90,19 @@ export class BackgroundTimerService {
    * Handle when tab becomes hidden/inactive
    */
   private handleTabHidden(): void {
-    // Save current timer states
-    this.saveTimerState();
-
-    // Notify service worker that tab is hidden
-   // this.sendMessageToServiceWorker({ type: 'TAB_HIDDEN' });
+    // Export current timer store state for persistence
+    const storeState = this.timerStore.exportState();
 
     // Start background sync if any timer is running
-    const savedStates = this.getSavedTimerStates();
-    if (savedStates) {
-      if (savedStates.stopwatch.isRunning || savedStates.countdown.isRunning ||
-          savedStates.interval.isRunning || savedStates.pomodoro.isRunning ||
-          savedStates.eggTimer?.isRunning || savedStates.bombTimer?.isRunning ||
-          savedStates.basketballTimer?.isRunning || savedStates.hockeyTimer?.isRunning ||
-          savedStates.presentationTimer?.isRunning) {
-        this.startBackgroundSync();
-        
-        // Send timer states to service worker for monitoring
-        this.sendMessageToServiceWorker({
-          type: 'TIMER_STATES',
-          states: savedStates
-        });
-      }
+    const runningTimers = Object.values(storeState.activeTimers).filter(timer => timer.isRunning);
+    if (runningTimers.length > 0) {
+      this.startBackgroundSync();
+      
+      // Send timer states to service worker for monitoring
+      this.sendMessageToServiceWorker({
+        type: 'TIMER_STATES',
+        states: storeState
+      });
     }
   }
 
@@ -107,114 +110,13 @@ export class BackgroundTimerService {
    * Handle when tab becomes visible/active
    */
   private handleTabVisible(): void {
-    // Notify service worker that tab is visible
-    // this.sendMessageToServiceWorker({ type: 'TAB_VISIBLE' });
-
-    // Stop background sync
+    // Stop background sync when tab becomes visible
     this.stopBackgroundSync();
 
-    // Trigger timer service to restore states with proper time calculation
-    // The TimerService.restoreTimerStates() method will handle the time elapsed calculation
-    this.triggerTimerRestore();
+    // Timer restoration is now handled automatically by the TimerService
+    // through its own visibility change handler
   }
 
-  /**
-   * Handle navigation between different timer pages
-   */
-  private handleNavigation(newUrl: string): void {
-    const previousRoute = this.currentRoute;
-    this.currentRoute = newUrl;
-
-    // If navigating away from a timer page, save states and start background sync
-    if (this.isTimerRoute(previousRoute) && !this.isTimerRoute(newUrl)) {
-      this.handleLeavingTimerPage();
-    }
-    
-    // If navigating to a timer page from non-timer page, stop background sync
-    if (!this.isTimerRoute(previousRoute) && this.isTimerRoute(newUrl)) {
-      this.handleEnteringTimerPage();
-    }
-  }
-
-  /**
-   * Check if a route is a timer page
-   */
-  private isTimerRoute(url: string): boolean {
-    const timerRoutes = [
-      '/stopwatch', '/countdown', '/interval', '/pomodoro',
-      '/egg-timer', '/bomb-timer', '/basketball-timer',
-      '/hockey-timer', '/presentation-timer', '/meditation-timer'
-    ];
-    return timerRoutes.some(route => url.includes(route));
-  }
-
-  /**
-   * Handle leaving a timer page (start background sync if timers are running)
-   */
-  private handleLeavingTimerPage(): void {
-    // Save current timer states
-    this.saveTimerState();
-
-    // Start background sync if any timer is running
-    const savedStates = this.getSavedTimerStates();
-    if (savedStates && this.hasRunningTimers(savedStates)) {
-      this.startBackgroundSync();
-    }
-  }
-
-  /**
-   * Handle entering a timer page (stop background sync)
-   */
-  private handleEnteringTimerPage(): void {
-    // Stop background sync since user is back on a timer page
-    this.stopBackgroundSync();
-    
-    // Trigger timer service to restore states
-    this.triggerTimerRestore();
-  }
-
-  /**
-   * Check if any timers are currently running
-   */
-  private hasRunningTimers(savedStates: any): boolean {
-    return savedStates.stopwatch.isRunning || savedStates.countdown.isRunning ||
-           savedStates.interval.isRunning || savedStates.pomodoro.isRunning ||
-           savedStates.eggTimer?.isRunning || savedStates.bombTimer?.isRunning ||
-           savedStates.basketballTimer?.isRunning || savedStates.hockeyTimer?.isRunning ||
-           savedStates.presentationTimer?.isRunning;
-  }
-
-  /**
-   * Save current timer states to localStorage
-   */
-  private saveTimerState(): void {
-    if (typeof localStorage === 'undefined') return;
-
-    try {
-      // Get current timer states from localStorage if they exist
-      const savedStates = this.getSavedTimerStates();
-      if (savedStates) {
-        localStorage.setItem('timer-states', JSON.stringify(savedStates));
-      }
-    } catch (error) {
-      console.warn('Failed to save timer states:', error);
-    }
-  }
-
-  /**
-   * Get saved timer states from localStorage
-   */
-  private getSavedTimerStates(): any {
-    if (typeof localStorage === 'undefined') return null;
-
-    try {
-      const savedStates = localStorage.getItem('timer-states');
-      return savedStates ? JSON.parse(savedStates) : null;
-    } catch (error) {
-      console.warn('Failed to get saved timer states:', error);
-      return null;
-    }
-  }
 
   /**
    * Restore timer states from localStorage
@@ -318,278 +220,107 @@ export class BackgroundTimerService {
    * Synchronize timer states in background
    */
   private syncTimers(): void {
-    const savedStates = this.getSavedTimerStates();
-    if (!savedStates) return;
+    const storeState = this.timerStore.getCurrentState();
+    if (!storeState.activeTimers || Object.keys(storeState.activeTimers).length === 0) return;
 
     const currentTime = Date.now();
-    const timeElapsed = currentTime - savedStates.timestamp;
+    const timeElapsed = currentTime - storeState.lastUpdate;
     let statesUpdated = false;
 
     // Update running timers with elapsed time
-    const updatedStates = { ...savedStates };
+    const runningTimers = Object.values(storeState.activeTimers).filter(timer => timer.isRunning);
 
-    // Update stopwatch if running
-    if (savedStates.stopwatch.isRunning) {
-      updatedStates.stopwatch = {
-        ...savedStates.stopwatch,
-        timeElapsed: savedStates.stopwatch.timeElapsed + timeElapsed
-      };
-      statesUpdated = true;
-    }
+    // Update each running timer
+    for (const timer of runningTimers) {
+      const newTimeRemaining = Math.max(0, timer.timeRemaining - timeElapsed);
+      let updatedTimer: StoreTimerState = { ...timer };
 
-    // Update countdown if running
-    if (savedStates.countdown.isRunning) {
-      const newTimeRemaining = Math.max(0, savedStates.countdown.timeRemaining - timeElapsed);
-      updatedStates.countdown = {
-        ...savedStates.countdown,
-        timeRemaining: newTimeRemaining,
-        isExpired: newTimeRemaining === 0,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if countdown just expired
-      if (newTimeRemaining === 0 && savedStates.countdown.timeRemaining > 0) {
-        this.handleTimerCompletion('Countdown');
-      }
-    }
-
-    // Update interval timer if running
-    if (savedStates.interval.isRunning && !savedStates.interval.isCompleted) {
-      const newTimeRemaining = Math.max(0, savedStates.interval.timeRemaining - timeElapsed);
-      updatedStates.interval = {
-        ...savedStates.interval,
-        timeRemaining: newTimeRemaining
-      };
-
-      // Handle phase transitions for interval timer
-      if (newTimeRemaining === 0) {
-        if (savedStates.interval.isWorkPhase) {
-          // Work phase completed, switch to rest
-          updatedStates.interval = {
-            ...updatedStates.interval,
-            isWorkPhase: false,
-            timeRemaining: savedStates.interval.restTime,
-            totalWorkTime: savedStates.interval.totalWorkTime + savedStates.interval.workTime
+      switch (timer.type) {
+        case 'stopwatch':
+          updatedTimer = {
+            ...timer,
+            timeElapsed: timer.timeElapsed + timeElapsed
           };
-        } else {
-          // Rest phase completed
-          if (savedStates.interval.currentCycle >= savedStates.interval.totalCycles) {
-            // All cycles completed
-            updatedStates.interval = {
-              ...updatedStates.interval,
-              isCompleted: true,
-              isRunning: false,
-              timeRemaining: 0,
-              totalRestTime: savedStates.interval.totalRestTime + savedStates.interval.restTime
-            };
-            this.handleTimerCompletion('Interval');
-          } else {
-            // Move to next cycle
-            updatedStates.interval = {
-              ...updatedStates.interval,
-              currentCycle: savedStates.interval.currentCycle + 1,
-              isWorkPhase: true,
-              timeRemaining: savedStates.interval.workTime,
-              totalRestTime: savedStates.interval.totalRestTime + savedStates.interval.restTime
-            };
-          }
-        }
-      }
-      statesUpdated = true;
-    }
+          break;
 
-    // Update pomodoro timer if running
-    if (savedStates.pomodoro.isRunning && !savedStates.pomodoro.isCompleted) {
-      const newTimeRemaining = Math.max(0, savedStates.pomodoro.timeRemaining - timeElapsed);
-      updatedStates.pomodoro = {
-        ...savedStates.pomodoro,
-        timeRemaining: newTimeRemaining
-      };
-
-      // Handle session transitions for pomodoro timer
-      if (newTimeRemaining === 0) {
-        if (savedStates.pomodoro.currentSessionType === 'work') {
-          // Work session completed, move to break
-          const nextBreakType = savedStates.pomodoro.currentSession % savedStates.pomodoro.sessionsUntilLongBreak === 0 ? 'longBreak' : 'shortBreak';
-          const nextBreakTime = nextBreakType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime;
+        case 'countdown':
+          updatedTimer = {
+            ...timer,
+            timeRemaining: newTimeRemaining,
+            isExpired: newTimeRemaining === 0,
+            isRunning: newTimeRemaining > 0
+          };
           
-          updatedStates.pomodoro = {
-            ...updatedStates.pomodoro,
-            currentSessionType: nextBreakType,
-            timeRemaining: nextBreakTime,
-            completedSessions: savedStates.pomodoro.completedSessions + 1,
-            totalWorkTime: savedStates.pomodoro.totalWorkTime + savedStates.pomodoro.workTime,
-            sessionHistory: [...savedStates.pomodoro.sessionHistory, {
-              type: 'work',
-              duration: savedStates.pomodoro.workTime,
-              completedAt: new Date()
-            }]
-          };
-        } else {
-          // Break session completed
-          if (savedStates.pomodoro.currentSession >= 8) { // Complete after 4 full cycles
-            updatedStates.pomodoro = {
-              ...updatedStates.pomodoro,
-              isCompleted: true,
-              isRunning: false,
-              timeRemaining: 0,
-              totalBreakTime: savedStates.pomodoro.totalBreakTime + (
-                savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime
-              ),
-              sessionHistory: [...savedStates.pomodoro.sessionHistory, {
-                type: savedStates.pomodoro.currentSessionType,
-                duration: savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime,
-                completedAt: new Date()
-              }]
-            };
-            this.handleTimerCompletion('Pomodoro');
-          } else {
-            // Move to next work session
-            updatedStates.pomodoro = {
-              ...updatedStates.pomodoro,
-              currentSession: savedStates.pomodoro.currentSession + 1,
-              currentSessionType: 'work',
-              timeRemaining: savedStates.pomodoro.workTime,
-              totalBreakTime: savedStates.pomodoro.totalBreakTime + (
-                savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime
-              ),
-              sessionHistory: [...savedStates.pomodoro.sessionHistory, {
-                type: savedStates.pomodoro.currentSessionType,
-                duration: savedStates.pomodoro.currentSessionType === 'longBreak' ? savedStates.pomodoro.longBreakTime : savedStates.pomodoro.shortBreakTime,
-                completedAt: new Date()
-              }]
-            };
+          // Check if countdown just expired
+          if (newTimeRemaining === 0 && timer.timeRemaining > 0) {
+            this.handleTimerCompletion('Countdown');
           }
-        }
+          break;
+
+        case 'eggTimer':
+          updatedTimer = {
+            ...timer,
+            timeRemaining: newTimeRemaining,
+            isRunning: newTimeRemaining > 0
+          } as EggTimerState;
+
+          // Handle completion for egg timer
+          if (newTimeRemaining === 0 && timer.timeRemaining > 0) {
+            this.handleTimerCompletion('Egg Timer');
+            updatedTimer = { ...updatedTimer, isCompleted: true } as EggTimerState;
+          }
+          break;
+
+        case 'bombTimer':
+          updatedTimer = {
+            ...timer,
+            timeRemaining: newTimeRemaining,
+            isRunning: newTimeRemaining > 0
+          } as BombTimerState;
+
+          // Handle completion for bomb timer
+          if (newTimeRemaining === 0 && timer.timeRemaining > 0) {
+            this.handleTimerCompletion('Bomb Timer');
+            updatedTimer = { ...updatedTimer, isExploded: true } as BombTimerState;
+          }
+          break;
+
+        case 'basketballTimer':
+        case 'hockeyTimer':
+        case 'presentationTimer':
+          updatedTimer = {
+            ...timer,
+            timeRemaining: newTimeRemaining,
+            isRunning: newTimeRemaining > 0
+          };
+
+          // Handle completion for these timers
+          if (newTimeRemaining === 0 && timer.timeRemaining > 0) {
+            const timerNames = {
+              basketballTimer: 'Basketball Timer',
+              hockeyTimer: 'Hockey Timer',
+              presentationTimer: 'Presentation Timer'
+            };
+            this.handleTimerCompletion(timerNames[timer.type]);
+          }
+          break;
+
+        // For complex timers like interval and pomodoro, we let the TimerService handle them
+        // to avoid duplicating complex logic
+        case 'interval':
+        case 'pomodoro':
+        case 'meditationTimer':
+          // These timers have complex state transitions that should be handled by TimerService
+          continue;
       }
-      statesUpdated = true;
-    }
 
-    // Update egg timer if running
-    if (savedStates.eggTimer?.isRunning && !savedStates.eggTimer?.isCompleted) {
-      const newTimeRemaining = Math.max(0, savedStates.eggTimer.timeRemaining - timeElapsed);
-      updatedStates.eggTimer = {
-        ...savedStates.eggTimer,
-        timeRemaining: newTimeRemaining,
-        isCompleted: newTimeRemaining === 0,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if egg timer just completed
-      if (newTimeRemaining === 0 && savedStates.eggTimer.timeRemaining > 0) {
-        this.handleTimerCompletion('Egg Timer');
-      }
-    }
-
-    // Update bomb timer if running
-    if (savedStates.bombTimer?.isRunning && !savedStates.bombTimer?.isExploded && !savedStates.bombTimer?.isDefused) {
-      const newTimeRemaining = Math.max(0, savedStates.bombTimer.timeRemaining - timeElapsed);
-      updatedStates.bombTimer = {
-        ...savedStates.bombTimer,
-        timeRemaining: newTimeRemaining,
-        isExploded: newTimeRemaining === 0,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if bomb timer just exploded
-      if (newTimeRemaining === 0 && savedStates.bombTimer.timeRemaining > 0) {
-        this.handleTimerCompletion('Bomb Timer');
-      }
-    }
-
-    // Update basketball timer if running
-    if (savedStates.basketballTimer?.isRunning) {
-      const newTimeRemaining = Math.max(0, savedStates.basketballTimer.timeRemaining - timeElapsed);
-      updatedStates.basketballTimer = {
-        ...savedStates.basketballTimer,
-        timeRemaining: newTimeRemaining,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if basketball period just completed
-      if (newTimeRemaining === 0 && savedStates.basketballTimer.timeRemaining > 0) {
-        this.handleTimerCompletion('Basketball Timer');
-      }
-    }
-
-    // Update hockey timer if running
-    if (savedStates.hockeyTimer?.isRunning) {
-      const newTimeRemaining = Math.max(0, savedStates.hockeyTimer.timeRemaining - timeElapsed);
-      updatedStates.hockeyTimer = {
-        ...savedStates.hockeyTimer,
-        timeRemaining: newTimeRemaining,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if hockey period just completed
-      if (newTimeRemaining === 0 && savedStates.hockeyTimer.timeRemaining > 0) {
-        this.handleTimerCompletion('Hockey Timer');
+      // Update the timer in the store if it changed
+      if (JSON.stringify(updatedTimer) !== JSON.stringify(timer)) {
+        this.timerStore.setTimer(updatedTimer);
+        statesUpdated = true;
       }
     }
 
-    // Update presentation timer if running
-    if (savedStates.presentationTimer?.isRunning && !savedStates.presentationTimer?.isPresentationComplete) {
-      const newTimeRemaining = Math.max(0, savedStates.presentationTimer.timeRemaining - timeElapsed);
-      updatedStates.presentationTimer = {
-        ...savedStates.presentationTimer,
-        timeRemaining: newTimeRemaining,
-        isRunning: newTimeRemaining > 0
-      };
-      statesUpdated = true;
-
-      // Check if presentation segment just completed
-      if (newTimeRemaining === 0 && savedStates.presentationTimer.timeRemaining > 0) {
-        this.handleTimerCompletion('Presentation Timer');
-      }
-    }
-
-    // Save updated states back to localStorage if any changes were made
-    if (statesUpdated) {
-      updatedStates.timestamp = currentTime;
-      try {
-        localStorage.setItem('timer-states', JSON.stringify(updatedStates));
-      } catch (error) {
-        console.warn('Failed to update timer states during sync:', error);
-      }
-    }
-
-    // Check for completed timers and send notifications
-    if (updatedStates.countdown.isExpired && !updatedStates.countdown.isRunning) {
-      this.handleTimerCompletion('Countdown');
-    }
-
-    if (updatedStates.interval.isCompleted && !updatedStates.interval.isRunning) {
-      this.handleTimerCompletion('Interval');
-    }
-
-    if (updatedStates.pomodoro.isCompleted && !updatedStates.pomodoro.isRunning) {
-      this.handleTimerCompletion('Pomodoro');
-    }
-
-    if (updatedStates.eggTimer?.isCompleted && !updatedStates.eggTimer?.isRunning) {
-      this.handleTimerCompletion('Egg Timer');
-    }
-
-    if (updatedStates.bombTimer?.isExploded && !updatedStates.bombTimer?.isRunning) {
-      this.handleTimerCompletion('Bomb Timer');
-    }
-
-    if (updatedStates.basketballTimer && updatedStates.basketballTimer.timeRemaining === 0 && !updatedStates.basketballTimer.isRunning) {
-      this.handleTimerCompletion('Basketball Timer');
-    }
-
-    if (updatedStates.hockeyTimer && updatedStates.hockeyTimer.timeRemaining === 0 && !updatedStates.hockeyTimer.isRunning) {
-      this.handleTimerCompletion('Hockey Timer');
-    }
-
-    if (updatedStates.presentationTimer && updatedStates.presentationTimer.timeRemaining === 0 && !updatedStates.presentationTimer.isRunning) {
-      this.handleTimerCompletion('Presentation Timer');
-    }
   }
 
   /**
@@ -669,117 +400,34 @@ export class BackgroundTimerService {
    */
   private cleanupCompletedTimer(timerType: string): void {
     try {
-      const savedStates = this.getSavedTimerStates();
-      if (!savedStates) return;
-
-      // Reset the completed timer to its initial state
-      switch (timerType.toLowerCase()) {
-        case 'countdown':
-          savedStates.countdown = {
-            timeRemaining: 0,
-            initialTime: 0,
-            isRunning: false,
-            isExpired: false
-          };
-          break;
-        case 'egg timer':
-          if (savedStates.eggTimer) {
-            savedStates.eggTimer = {
-              initialTime: 0,
-              timeRemaining: 0,
-              isRunning: false,
-              isCompleted: false,
-              selectedPreset: null
-            };
-          }
-          break;
-        case 'bomb timer':
-          if (savedStates.bombTimer) {
-            savedStates.bombTimer = {
-              initialTime: 0,
-              timeRemaining: 0,
-              isRunning: false,
-              isExploded: false,
-              isDefused: false,
-              difficulty: 'medium'
-            };
-          }
-          break;
-        case 'basketball timer':
-          if (savedStates.basketballTimer) {
-            savedStates.basketballTimer = {
-              periodDuration: 0,
-              timeRemaining: 0,
-              isRunning: false,
-              currentPeriod: 1,
-              totalPeriods: 4,
-              homeScore: 0,
-              awayScore: 0
-            };
-          }
-          break;
-        case 'hockey timer':
-          if (savedStates.hockeyTimer) {
-            savedStates.hockeyTimer = {
-              periodDuration: 0,
-              timeRemaining: 0,
-              isRunning: false,
-              currentPeriod: 1,
-              totalPeriods: 3,
-              homePenalties: 0,
-              awayPenalties: 0
-            };
-          }
-          break;
-        case 'presentation timer':
-          if (savedStates.presentationTimer) {
-            savedStates.presentationTimer = {
-              segments: [],
-              currentSegmentIndex: 0,
-              timeRemaining: 0,
-              isRunning: false,
-              isPresentationComplete: false
-            };
-          }
-          break;
-        case 'interval':
-          savedStates.interval = {
-            workTime: 0,
-            restTime: 0,
-            currentCycle: 1,
-            totalCycles: 1,
-            timeRemaining: 0,
-            isRunning: false,
-            isWorkPhase: true,
-            isCompleted: false,
-            totalWorkTime: 0,
-            totalRestTime: 0
-          };
-          break;
-        case 'pomodoro':
-          savedStates.pomodoro = {
-            workTime: 0,
-            shortBreakTime: 0,
-            longBreakTime: 0,
-            sessionsUntilLongBreak: 4,
-            currentSession: 1,
-            currentSessionType: 'work',
-            timeRemaining: 0,
-            isRunning: false,
-            isCompleted: false,
-            completedSessions: 0,
-            totalWorkTime: 0,
-            totalBreakTime: 0,
-            sessionHistory: []
-          };
-          break;
-      }
-
-      // Update timestamp and save back to localStorage
-      savedStates.timestamp = Date.now();
-      localStorage.setItem('timer-states', JSON.stringify(savedStates));
+      console.log(`Cleaning up completed ${timerType} from timer store...`);
       
-      console.log(`Cleaned up completed ${timerType} from localStorage`);
+      // Find and remove completed timers of this type from the store
+      const storeState = this.timerStore.getCurrentState();
+      const timerNames: Record<string, string> = {
+        'Countdown': 'countdown',
+        'Egg Timer': 'eggTimer',
+        'Bomb Timer': 'bombTimer',
+        'Basketball Timer': 'basketballTimer',
+        'Hockey Timer': 'hockeyTimer',
+        'Presentation Timer': 'presentationTimer',
+        'Interval': 'interval',
+        'Pomodoro': 'pomodoro'
+      };
+
+      const targetTimerType = timerNames[timerType];
+      if (!targetTimerType) return;
+
+      const completedTimers = Object.entries(storeState.activeTimers).filter(([_, timer]) => {
+        return timer.type === targetTimerType && !timer.isRunning;
+      });
+
+      // Remove completed timers
+      for (const [timerId] of completedTimers) {
+        this.timerStore.removeTimer(timerId);
+      }
+      
+      console.log(`Cleaned up completed ${timerType} from timer store`);
     } catch (error) {
       console.warn(`Failed to cleanup completed ${timerType}:`, error);
     }

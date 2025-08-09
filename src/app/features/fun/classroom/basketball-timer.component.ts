@@ -686,8 +686,10 @@ export class BasketballTimerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Initialize with default settings
-    this.applySettings();
+    // Only apply default settings if no existing timer state
+    if (this.basketballTimerState().periodDuration === 0) {
+      this.applySettings();
+    }
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Basketball Timer', '12 Minute');

@@ -728,8 +728,10 @@ export class HockeyTimerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Initialize with default settings
-    this.applySettings();
+    // Only apply default settings if no existing timer state
+    if (this.hockeyTimerState().periodDuration === 0) {
+      this.applySettings();
+    }
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Hockey Timer', '15 Minute');

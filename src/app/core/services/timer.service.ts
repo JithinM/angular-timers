@@ -1,8 +1,11 @@
-import { Injectable, signal, computed, effect, inject, untracked } from '@angular/core';
+import { Injectable, signal, computed, effect, inject, untracked, DestroyRef } from '@angular/core';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NotificationsService } from './notifications.service';
 import { BackgroundTimerService } from './background-timer.service';
 import { BackgroundSyncService } from './background-sync.service';
 import { TimerApiService } from './timer-api.service';
+import { TimerStoreService, TimerType, TimerState as StoreTimerState } from './timer-store.service';
 
 export interface TimerState {
   timeElapsed: number;
@@ -128,6 +131,9 @@ export class TimerService {
   private readonly backgroundTimerService = inject(BackgroundTimerService);
   private readonly backgroundSyncService = inject(BackgroundSyncService);
   private readonly timerApiService = inject(TimerApiService);
+  private readonly timerStore = inject(TimerStoreService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Stopwatch signals
   private readonly _stopwatchState = signal<TimerState>({
@@ -333,6 +339,13 @@ export class TimerService {
       });
     });
 
+    // Listen to store for timer cancellation events
+    this.timerStore.runningTimers$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(runningTimers => {
+      this.handleStoreTimerUpdates(runningTimers);
+    });
+
     // Setup visibility change handler to restore timer states when tab becomes visible
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -352,23 +365,49 @@ export class TimerService {
     }
   }
 
+  /**
+   * Handle timer updates from the store (for cancellation logic)
+   */
+  private handleStoreTimerUpdates(runningTimers: StoreTimerState[]): void {
+    // No longer cancel timers on navigation - allow multiple timers to run concurrently
+    // This method is kept for potential future use but no longer cancels timers
+  }
+
+  /**
+   * Cancel timers from current route when user navigates to different timer
+   * This method is now disabled to allow multiple concurrent timers
+   */
+  private cancelCurrentRouteTimers(): void {
+    // Method disabled - timers now continue running regardless of navigation
+  }
+
   // Stopwatch methods
   startStopwatch(): void {
     this._stopwatchState.update(state => ({
       ...state,
       isRunning: true,
       isPaused: false,
-      startTime: state.startTime || Date.now() - state.timeElapsed
+      // Always recalculate startTime to account for any paused time
+      startTime: Date.now() - state.timeElapsed
     }));
+    
+    // Update store with new timer state
+    this.updateStoreTimer('stopwatch');
     this.saveTimerStates();
   }
 
   stopStopwatch(): void {
-    this._stopwatchState.update(state => ({
-      ...state,
-      isRunning: false,
-      isPaused: true
-    }));
+    this._stopwatchState.update(state => {
+      // Capture the current elapsed time when pausing
+      const currentElapsed = state.startTime ? Date.now() - state.startTime : state.timeElapsed;
+      return {
+        ...state,
+        isRunning: false,
+        isPaused: true,
+        timeElapsed: currentElapsed,
+        startTime: null // Clear startTime when paused
+      };
+    });
     this.saveTimerStates();
   }
 
@@ -411,6 +450,9 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('countdown');
       this.saveTimerStates();
     }
   }
@@ -462,6 +504,211 @@ export class TimerService {
     }));
   }
 
+  /**
+   * Update timer state in the store
+   */
+  private updateStoreTimer(timerType: TimerType): void {
+    const currentRoute = this.router.url;
+    const timerId = this.timerStore.generateTimerId(timerType);
+
+    let storeTimerState: Partial<StoreTimerState>;
+
+    switch (timerType) {
+      case 'stopwatch':
+        const stopwatchState = this._stopwatchState();
+        storeTimerState = {
+          id: timerId,
+          type: 'stopwatch',
+          isRunning: stopwatchState.isRunning,
+          isPaused: stopwatchState.isPaused,
+          startTime: stopwatchState.startTime,
+          timeElapsed: stopwatchState.timeElapsed,
+          timeRemaining: 0,
+          initialTime: 0,
+          route: currentRoute,
+          laps: stopwatchState.laps,
+          pausedTime: stopwatchState.pausedTime
+        };
+        break;
+      case 'countdown':
+        const countdownState = this._countdownState();
+        storeTimerState = {
+          id: timerId,
+          type: 'countdown',
+          isRunning: countdownState.isRunning,
+          isPaused: countdownState.isPaused,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: countdownState.timeRemaining,
+          initialTime: countdownState.initialTime,
+          route: currentRoute,
+          isExpired: countdownState.isExpired
+        };
+        break;
+      case 'interval':
+        const intervalState = this._intervalState();
+        storeTimerState = {
+          id: timerId,
+          type: 'interval',
+          isRunning: intervalState.isRunning,
+          isPaused: intervalState.isPaused,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: intervalState.timeRemaining,
+          initialTime: intervalState.workTime,
+          route: currentRoute,
+          workTime: intervalState.workTime,
+          restTime: intervalState.restTime,
+          totalCycles: intervalState.totalCycles,
+          currentCycle: intervalState.currentCycle,
+          isWorkPhase: intervalState.isWorkPhase,
+          isCompleted: intervalState.isCompleted,
+          totalWorkTime: intervalState.totalWorkTime,
+          totalRestTime: intervalState.totalRestTime
+        };
+        break;
+      case 'pomodoro':
+        const pomodoroState = this._pomodoroState();
+        storeTimerState = {
+          id: timerId,
+          type: 'pomodoro',
+          isRunning: pomodoroState.isRunning,
+          isPaused: pomodoroState.isPaused,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: pomodoroState.timeRemaining,
+          initialTime: pomodoroState.workTime,
+          route: currentRoute,
+          workTime: pomodoroState.workTime,
+          shortBreakTime: pomodoroState.shortBreakTime,
+          longBreakTime: pomodoroState.longBreakTime,
+          sessionsUntilLongBreak: pomodoroState.sessionsUntilLongBreak,
+          currentSession: pomodoroState.currentSession,
+          currentSessionType: pomodoroState.currentSessionType,
+          isCompleted: pomodoroState.isCompleted,
+          completedSessions: pomodoroState.completedSessions,
+          totalWorkTime: pomodoroState.totalWorkTime,
+          totalBreakTime: pomodoroState.totalBreakTime,
+          sessionHistory: pomodoroState.sessionHistory
+        };
+        break;
+      case 'eggTimer':
+        const eggTimerState = this._eggTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'eggTimer',
+          isRunning: eggTimerState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: eggTimerState.timeRemaining,
+          initialTime: eggTimerState.initialTime,
+          route: currentRoute,
+          isCompleted: eggTimerState.isCompleted,
+          selectedPreset: eggTimerState.selectedPreset
+        };
+        break;
+      case 'bombTimer':
+        const bombTimerState = this._bombTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'bombTimer',
+          isRunning: bombTimerState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: bombTimerState.timeRemaining,
+          initialTime: bombTimerState.initialTime,
+          route: currentRoute,
+          isExploded: bombTimerState.isExploded,
+          isDefused: bombTimerState.isDefused,
+          difficulty: bombTimerState.difficulty
+        };
+        break;
+      case 'meditationTimer':
+        const meditationState = this._meditationTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'meditationTimer',
+          isRunning: meditationState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: meditationState.timeRemaining,
+          initialTime: meditationState.breatheInDuration * 1000,
+          route: currentRoute,
+          breatheInDuration: meditationState.breatheInDuration,
+          breatheOutDuration: meditationState.breatheOutDuration,
+          totalCycles: meditationState.totalCycles,
+          currentPhase: meditationState.currentPhase,
+          currentCycle: meditationState.currentCycle,
+          isCompleted: meditationState.isCompleted,
+          enableSound: meditationState.enableSound
+        };
+        break;
+      case 'basketballTimer':
+        const basketballState = this._basketballTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'basketballTimer',
+          isRunning: basketballState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: basketballState.timeRemaining,
+          initialTime: basketballState.periodDuration,
+          route: currentRoute,
+          periodDuration: basketballState.periodDuration,
+          currentPeriod: basketballState.currentPeriod,
+          totalPeriods: basketballState.totalPeriods,
+          homeScore: basketballState.homeScore,
+          awayScore: basketballState.awayScore
+        };
+        break;
+      case 'hockeyTimer':
+        const hockeyState = this._hockeyTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'hockeyTimer',
+          isRunning: hockeyState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: hockeyState.timeRemaining,
+          initialTime: hockeyState.periodDuration,
+          route: currentRoute,
+          periodDuration: hockeyState.periodDuration,
+          currentPeriod: hockeyState.currentPeriod,
+          totalPeriods: hockeyState.totalPeriods,
+          homePenalties: hockeyState.homePenalties,
+          awayPenalties: hockeyState.awayPenalties
+        };
+        break;
+      case 'presentationTimer':
+        const presentationState = this._presentationTimerState();
+        storeTimerState = {
+          id: timerId,
+          type: 'presentationTimer',
+          isRunning: presentationState.isRunning,
+          isPaused: false,
+          startTime: Date.now(),
+          timeElapsed: 0,
+          timeRemaining: presentationState.timeRemaining,
+          initialTime: presentationState.segments.length > 0 ? presentationState.segments[0].duration * 1000 : 0,
+          route: currentRoute,
+          segments: presentationState.segments,
+          currentSegmentIndex: presentationState.currentSegmentIndex,
+          isPresentationComplete: presentationState.isPresentationComplete
+        };
+        break;
+      default:
+        return;
+    }
+
+    // Cast to StoreTimerState since we're providing all required fields
+    this.timerStore.setTimer(storeTimerState as StoreTimerState);
+  }
+
   startIntervalTimer(): void {
     const state = this._intervalState();
     if (state.timeRemaining > 0 && !state.isCompleted) {
@@ -470,6 +717,9 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('interval');
       this.saveTimerStates();
     }
   }
@@ -613,6 +863,9 @@ export class TimerService {
         isRunning: true,
         isPaused: false
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('pomodoro');
       this.saveTimerStates();
     }
   }
@@ -803,6 +1056,9 @@ export class TimerService {
         ...current,
         isRunning: true
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('eggTimer');
       this.saveTimerStates();
     }
   }
@@ -854,6 +1110,9 @@ export class TimerService {
         isExploded: false,
         isDefused: false
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('bombTimer');
       this.saveTimerStates();
     }
   }
@@ -921,6 +1180,9 @@ export class TimerService {
       currentPhase: 'in',
       timeRemaining: state.breatheInDuration * 1000
     }));
+    
+    // Update store with new timer state
+    this.updateStoreTimer('meditationTimer');
     this.saveTimerStates();
   }
 
@@ -973,6 +1235,9 @@ export class TimerService {
         ...current,
         isRunning: true
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('basketballTimer');
       this.saveTimerStates();
     }
   }
@@ -1023,6 +1288,9 @@ export class TimerService {
         ...current,
         isRunning: true
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('hockeyTimer');
       this.saveTimerStates();
     }
   }
@@ -1071,6 +1339,9 @@ export class TimerService {
         ...current,
         isRunning: true
       }));
+      
+      // Update store with new timer state
+      this.updateStoreTimer('presentationTimer');
       this.saveTimerStates();
     }
   }
@@ -1420,12 +1691,17 @@ export class TimerService {
    * Restore timer states from localStorage
    */
   restoreTimerStates(): void {
-    // Load states using TimerApiService (which now uses localStorage)
+    // First try to restore from timer store backup
     this.timerApiService.loadTimerStates().subscribe({
       next: (savedStates) => {
-        if (savedStates) {
+        if (savedStates && (savedStates as any).activeTimers) {
+          // This is a timer store state, import it to the store
+          this.timerStore.importState(savedStates as any);
+          console.log('[TimerService] Timer store state restored from backup');
+        } else if (savedStates) {
+          // Legacy timer states, convert and restore
           this.restoreFromStates(savedStates);
-          console.log('[TimerService] Timer states restored from localStorage');
+          console.log('[TimerService] Legacy timer states restored from localStorage');
         }
       },
       error: (error) => {

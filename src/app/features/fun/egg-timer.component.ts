@@ -554,8 +554,14 @@ export class EggTimerComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // Set default to medium-boiled
-    this.selectPreset(this.presets[1]);
+    // Only set default if no timer is already configured
+    if (this.initialTime() === 0) {
+      // Set default to medium-boiled preset without auto-starting
+      const preset = this.presets[1];
+      const timeMs = preset.time * 60 * 1000;
+      this.timerService.setEggTimerTime(timeMs, preset.name);
+      this.timerService.saveTimerStates();
+    }
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Egg Timer', '6 Minute');

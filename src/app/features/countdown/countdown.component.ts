@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, signal, computed, effect, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, effect, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // Angular Material imports
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +21,7 @@ import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
 import { StorageService } from '../../core/services/storage.service';
 import { BackgroundTimerService } from '../../core/services/background-timer.service';
+import { TimerStoreService } from '../../core/services/timer-store.service';
 
 // Shared components
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
@@ -62,6 +64,8 @@ export class CountdownComponent implements OnInit, OnDestroy {
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly backgroundTimerService = inject(BackgroundTimerService);
+  private readonly timerStore = inject(TimerStoreService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Component state
   isFullscreen = false;
@@ -129,6 +133,13 @@ export class CountdownComponent implements OnInit, OnDestroy {
         this.showUrgentNotification();
       }
     }, { allowSignalWrites: true });
+
+    // Listen for timer cancellations from store
+    this.timerStore.runningTimers$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(runningTimers => {
+      this.handleStoreTimerUpdates(runningTimers);
+    });
   }
 
   ngOnInit(): void {
@@ -155,6 +166,27 @@ export class CountdownComponent implements OnInit, OnDestroy {
       document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     }
     this.exitFullscreen();
+  }
+
+  /**
+   * Handle timer updates from the store (for cancellation logic)
+   */
+  private handleStoreTimerUpdates(runningTimers: any[]): void {
+    const currentRoute = this.router.url;
+    
+    // Check if there's a running timer from a different route
+    const hasActiveTimerFromDifferentRoute = runningTimers.some(timer =>
+      timer.route !== currentRoute && timer.isRunning && timer.type !== 'countdown'
+    );
+
+    if (hasActiveTimerFromDifferentRoute && this.isRunning()) {
+      // Another timer type is running, show notification and stop current timer
+      this.snackBar.open('⚠️ Timer cancelled - another timer is active', 'Dismiss', {
+        duration: 3000,
+        panelClass: ['warning-snackbar']
+      });
+      this.timerService.stopCountdown();
+    }
   }
 
   // Timer control methods

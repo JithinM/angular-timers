@@ -550,10 +550,10 @@ export class PresentationTimerComponent implements OnInit {
     const currentSegment = this.currentSegment();
     if (currentSegment) {
       const currentProgress = ((currentSegment.duration * 1000) - this.timeRemaining()) / 1000;
-      return Math.min(((completedDuration + currentProgress) / totalDuration) * 100, 100);
+      return Number(Math.min(((completedDuration + currentProgress) / totalDuration) * 100, 100).toFixed(2));
     }
     
-    return Math.min((completedDuration / totalDuration) * 100, 100);
+    return Number(Math.min((completedDuration / totalDuration) * 100, 100).toFixed(2));
   });
 
   isSegmentComplete = computed(() => {
@@ -579,8 +579,10 @@ export class PresentationTimerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Load sample segments for demonstration
-    this.loadSampleSegments();
+    // Only load sample segments if no segments exist
+    if (this.segments().length === 0) {
+      this.loadSampleSegments();
+    }
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Presentation Timer', '30 Minute');
@@ -660,7 +662,10 @@ export class PresentationTimerComponent implements OnInit {
     ];
     
     this.timerService.setupPresentationTimer(sampleSegments);
-    this.resetTimer();
+    // Only reset timer if explicitly loading sample segments (not on navigation)
+    if (this.segments().length === 0) {
+      this.resetTimer();
+    }
     this.timerService.saveTimerStates();
     
     // Update SEO metadata with total presentation time (30 minutes)
