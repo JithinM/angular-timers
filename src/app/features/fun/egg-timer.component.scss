@@ -1,0 +1,244 @@
+.egg-timer-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    .egg-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 1rem;
+    }
+
+    .egg-header h1 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+    }
+
+    .egg-header p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .egg-visualizer {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .egg-container {
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .egg-container.cooking {
+      animation: gentle-bounce 2s infinite;
+    }
+
+    @keyframes gentle-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .egg-shell {
+      width: 120px;
+      height: 160px;
+      background: #fffaf0;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      position: relative;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 2px solid #f0e6d2;
+    }
+
+    .egg-white {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .egg-yolk {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffd700;
+      border-radius: 50%;
+      transition: height 0.5s ease;
+    }
+
+    .egg-yolk.cooked {
+      background: #ff8c00;
+    }
+
+    .egg-shadow {
+      width: 80px;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 50%;
+      margin: 10px auto 0;
+      filter: blur(5px);
+    }
+
+    .timer-section {
+      margin-bottom: 2rem;
+    }
+
+    .timer-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .timer-progress {
+      margin: 1rem 0;
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .timer-controls button {
+      min-width: 120px;
+    }
+
+    .presets-section {
+      margin-bottom: 2rem;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .preset-button {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      text-align: left;
+      height: auto;
+      min-height: 80px;
+    }
+
+    .preset-button.active {
+      border-color: var(--primary-color);
+      background: rgba(25, 118, 210, 0.05);
+    }
+
+    .preset-icon mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .preset-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .preset-name {
+      font-weight: 500;
+      font-size: 1.125rem;
+    }
+
+    .preset-time {
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+
+    .preset-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .custom-section {
+      margin-bottom: 2rem;
+    }
+
+    .custom-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+
+    .custom-controls mat-form-field {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .tips-section ul {
+      padding-left: 1.5rem;
+    }
+
+    .tips-section li {
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .egg-header h1 {
+        font-size: 2rem;
+      }
+
+      .presets-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preset-button {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .timer-controls {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .timer-controls button {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      .custom-controls {
+        flex-direction: column;
+      }
+
+      .custom-controls mat-form-field {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .egg-timer-container {
+        padding: 0.75rem;
+      }
+
+      .egg-shell {
+        width: 100px;
+        height: 140px;
+      }
+    }

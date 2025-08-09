@@ -1,0 +1,210 @@
+<div class="presentation-timer-container">
+  <!-- Header -->
+  <header class="presentation-header">
+    <h1>
+      <mat-icon>presentation_chart</mat-icon>
+      Presentation Timer
+    </h1>
+    <p>Keep your presentations on track with timed segments</p>
+  </header>
+
+  <!-- Timer Visualizer -->
+  <section class="timer-visualizer">
+    <div class="timer-container">
+      <div class="timer-display">
+        <app-time-display
+          [time]="formattedTime()"
+          [status]="timerStatus()"
+          size="large"
+          [animate]="isRunning()">
+        </app-time-display>
+        
+        <div class="current-segment" *ngIf="currentSegment()">
+          <span class="segment-title">{{ currentSegment()!.title }}</span>
+          <span class="segment-time">{{ formatDuration(currentSegment()!.duration) }}</span>
+        </div>
+      </div>
+      
+      <div class="progress-container">
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="segmentProgress()"
+          class="segment-progress">
+        </mat-progress-bar>
+        
+        <div class="overall-progress">
+          <span>Overall Progress: {{ overallProgress() }}%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timer Controls -->
+  <section class="timer-section">
+    <mat-card class="timer-card">
+      <mat-card-content>
+        <div class="timer-controls">
+          <button 
+            mat-raised-button 
+            color="primary"
+            (click)="startTimer()"
+            [disabled]="isRunning() || isPresentationComplete()"
+            *ngIf="!isPresentationComplete()">
+            <mat-icon>play_arrow</mat-icon>
+            Start Presentation
+          </button>
+          
+          <button 
+            mat-raised-button 
+            color="accent"
+            (click)="pauseTimer()"
+            *ngIf="isRunning()">
+            <mat-icon>pause</mat-icon>
+            Pause
+          </button>
+          
+          <button 
+            mat-raised-button 
+            color="warn"
+            (click)="resetTimer()"
+            *ngIf="isRunning() || isPresentationComplete() || timeRemaining() < currentSegmentDuration()">
+            <mat-icon>replay</mat-icon>
+            Reset
+          </button>
+          
+          <button 
+            mat-raised-button 
+            color="primary"
+            (click)="nextSegment()"
+            *ngIf="isSegmentComplete() && !isPresentationComplete()">
+            <mat-icon>skip_next</mat-icon>
+            Next Segment
+          </button>
+          
+          <button 
+            mat-raised-button 
+            color="warn"
+            (click)="finishPresentation()"
+            *ngIf="isPresentationComplete()">
+            <mat-icon>flag</mat-icon>
+            Finish Presentation
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <!-- Segment Setup -->
+  <section class="segment-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>timeline</mat-icon>
+          Presentation Segments
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="segment-setup">
+          <div class="segment-form">
+            <mat-form-field appearance="fill">
+              <mat-label>Segment Title</mat-label>
+              <input 
+                matInput 
+                [(ngModel)]="newSegmentTitle" 
+                placeholder="Introduction"
+                [disabled]="isRunning()">
+            </mat-form-field>
+            
+            <mat-form-field appearance="fill">
+              <mat-label>Duration (minutes)</mat-label>
+              <input 
+                matInput 
+                type="number" 
+                [(ngModel)]="newSegmentDuration" 
+                min="1" 
+                max="120"
+                [disabled]="isRunning()">
+            </mat-form-field>
+            
+            <button 
+              mat-raised-button 
+              (click)="addSegment()"
+              [disabled]="isRunning() || !newSegmentTitle || newSegmentDuration <= 0">
+              Add Segment
+            </button>
+          </div>
+          
+          <div class="segments-list">
+            <mat-list>
+              <mat-list-item 
+                *ngFor="let segment of segments(); let i = index; let first = first; let last = last"
+                class="segment-item"
+                [class.active]="currentSegmentIndex() === i"
+                [class.completed]="segment.completed">
+                <div class="segment-content">
+                  <span class="segment-number">{{ i + 1 }}.</span>
+                  <span class="segment-title">{{ segment.title }}</span>
+                  <span class="segment-duration">{{ formatDuration(segment.duration) }}</span>
+                  <button 
+                    mat-icon-button 
+                    (click)="removeSegment(i)"
+                    [disabled]="isRunning()"
+                    *ngIf="!segment.completed">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </mat-list-item>
+            </mat-list>
+          </div>
+          
+          <div class="segment-actions">
+            <button 
+              mat-stroked-button 
+              (click)="clearSegments()"
+              [disabled]="isRunning() || segments().length === 0">
+              Clear All
+            </button>
+            
+            <button 
+              mat-stroked-button 
+              (click)="loadSampleSegments()"
+              [disabled]="isRunning()">
+              Load Sample
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+  
+  <!-- Ad Slot -->
+  <section class="ad-section">
+    <app-ad-slot
+      size="rectangle"
+      position="inline"
+      [showPlaceholder]="true"
+      class="inline-ad">
+    </app-ad-slot>
+  </section>
+  
+  <!-- Presentation Tips -->
+  <section class="tips-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>tips_and_updates</mat-icon>
+          Presentation Tips
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <ul class="tips-list">
+          <li>Practice your presentation with the timer to stay on track</li>
+          <li>Leave 2-3 minutes at the end for questions</li>
+          <li>Use visual cues when segments are about to end</li>
+          <li>Keep a backup timer visible during your presentation</li>
+          <li>Adjust segment times based on audience engagement</li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  </section>
+</div>

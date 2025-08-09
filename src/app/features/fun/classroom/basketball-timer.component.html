@@ -1,0 +1,250 @@
+
+    <div class="basketball-timer-container">
+      <!-- Header -->
+      <header class="basketball-header">
+        <h1>
+          <mat-icon>sports_basketball</mat-icon>
+          Basketball Timer
+        </h1>
+        <p>Perfect for classroom basketball games and activities</p>
+      </header>
+
+      <!-- Court Visualizer -->
+      <section class="court-visualizer">
+        <div class="court-container">
+          <div class="court">
+            <!-- Basketball Court -->
+            <div class="court-lines">
+              <div class="center-circle"></div>
+              <div class="free-throw-line"></div>
+              <div class="free-throw-circle"></div>
+              <div class="key"></div>
+              <div class="backboard"></div>
+              <div class="hoop"></div>
+            </div>
+            
+            <!-- Timer Display on Court -->
+            <div class="court-timer-display">
+              <app-time-display
+                [time]="formattedTime()"
+                [status]="timerStatus()"
+                size="large"
+                [animate]="isRunning()">
+              </app-time-display>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Controls -->
+      <section class="game-section">
+        <mat-card class="game-card">
+          <mat-card-content>
+            <div class="period-display">
+              <span class="period-label">Period:</span>
+              <span class="period-number">{{ currentPeriod() }}</span>
+              <span class="period-max">of {{ totalPeriods() }}</span>
+            </div>
+            
+            <mat-progress-bar 
+              mode="determinate" 
+              [value]="periodProgress()"
+              class="period-progress">
+            </mat-progress-bar>
+            
+            <div class="game-controls">
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="startPeriod()"
+                [disabled]="isRunning() || isPeriodComplete()"
+                *ngIf="!isGameOver()">
+                <mat-icon>play_arrow</mat-icon>
+                Start Period
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="accent"
+                (click)="pausePeriod()"
+                *ngIf="isRunning()">
+                <mat-icon>pause</mat-icon>
+                Pause
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="warn"
+                (click)="resetPeriod()"
+                *ngIf="isRunning() || isPeriodComplete() || timeRemaining() < periodDuration()">
+                <mat-icon>replay</mat-icon>
+                Reset Period
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="nextPeriod()"
+                *ngIf="isPeriodComplete() && !isGameOver()">
+                <mat-icon>skip_next</mat-icon>
+                Next Period
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="warn"
+                (click)="endGame()"
+                *ngIf="isGameOver()">
+                <mat-icon>flag</mat-icon>
+                End Game
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Setup Section -->
+      <section class="setup-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>settings</mat-icon>
+              Game Settings
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="setup-controls">
+              <mat-form-field appearance="fill">
+                <mat-label>Period Duration (minutes)</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="periodMinutes" 
+                  min="1" 
+                  max="60"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <mat-form-field appearance="fill">
+                <mat-label>Total Periods</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="setupPeriods" 
+                  min="1" 
+                  max="10"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <button 
+                mat-raised-button 
+                (click)="applySettings()"
+                [disabled]="isRunning()">
+                Apply Settings
+              </button>
+            </div>
+            
+            <div class="preset-controls">
+              <h3>Quick Presets</h3>
+              <div class="preset-buttons">
+                <button 
+                  mat-stroked-button
+                  [class.active]="periodMinutes === 8 && setupPeriods === 4"
+                  (click)="setPreset(8, 4)"
+                  [disabled]="isRunning()">
+                  Middle School (8 min × 4)
+                </button>
+                <button 
+                  mat-stroked-button
+                  [class.active]="periodMinutes === 12 && setupPeriods === 4"
+                  (click)="setPreset(12, 4)"
+                  [disabled]="isRunning()">
+                  High School (12 min × 4)
+                </button>
+                <button 
+                  mat-stroked-button
+                  [class.active]="periodMinutes === 20 && setupPeriods === 2"
+                  (click)="setPreset(20, 2)"
+                  [disabled]="isRunning()">
+                  College (20 min × 2)
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Score Tracking -->
+      <section class="score-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>score</mat-icon>
+              Score Tracker
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="score-display">
+              <div class="team-score">
+                <span class="team-name">Home</span>
+                <div class="score-controls">
+                  <button mat-icon-button (click)="decreaseScore('home')">
+                    <mat-icon>remove</mat-icon>
+                  </button>
+                  <span class="score">{{ homeScore() }}</span>
+                  <button mat-icon-button (click)="increaseScore('home')">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="vs-divider">VS</div>
+              
+              <div class="team-score">
+                <span class="team-name">Away</span>
+                <div class="score-controls">
+                  <button mat-icon-button (click)="decreaseScore('away')">
+                    <mat-icon>remove</mat-icon>
+                  </button>
+                  <span class="score">{{ awayScore() }}</span>
+                  <button mat-icon-button (click)="increaseScore('away')">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+              </section>
+              
+              <!-- Ad Slot -->
+              <section class="ad-section">
+                <app-ad-slot
+                  size="rectangle"
+                  position="inline"
+                  [showPlaceholder]="true"
+                  class="inline-ad">
+                </app-ad-slot>
+              </section>
+              
+              <!-- Instructions Section -->
+              <section class="instructions-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>help</mat-icon>
+              How to Use
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <ol class="instructions-list">
+              <li>Set the period duration and total periods for your game</li>
+              <li>Click "Start Period" to begin timing</li>
+              <li>Use the score tracker to keep track of points</li>
+              <li>When time expires, click "Next Period" to continue</li>
+              <li>After all periods, click "End Game" to finish</li>
+            </ol>
+          </mat-card-content>
+        </mat-card>
+      </section>
+    </div>

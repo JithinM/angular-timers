@@ -1,0 +1,330 @@
+.basketball-timer-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+    }
+
+    .basketball-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 1rem;
+    }
+
+    .basketball-header h1 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 0.5rem;
+      color: #ffeb3b;
+    }
+
+    .basketball-header p {
+      font-size: 1.125rem;
+      color: #e8f5e9;
+      margin: 0;
+    }
+
+    .court-visualizer {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .court-container {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .court {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      background: #8bc34a;
+      border: 3px solid #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .court-lines {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .center-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+    }
+
+    .free-throw-line {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      width: 80px;
+      height: 2px;
+      background: #fff;
+      transform: translateY(-50%);
+    }
+
+    .free-throw-circle {
+      position: absolute;
+      top: 50%;
+      right: 100px;
+      width: 40px;
+      height: 40px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    .key {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      width: 120px;
+      height: 80px;
+      border: 2px solid #fff;
+      transform: translateY(-50%);
+    }
+
+    .backboard {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      width: 4px;
+      height: 40px;
+      background: #fff;
+      transform: translateY(-50%);
+    }
+
+    .hoop {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      width: 24px;
+      height: 24px;
+      border: 2px solid #ff5722;
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    .court-timer-display {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 5px 15px;
+      border-radius: 20px;
+      border: 2px solid #ffeb3b;
+    }
+
+    .game-section {
+      margin-bottom: 2rem;
+    }
+
+    .period-display {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+
+    .period-label {
+      color: #e8f5e9;
+    }
+
+    .period-number {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffeb3b;
+    }
+
+    .period-max {
+      color: #c8e6c9;
+    }
+
+    .period-progress {
+      margin: 1rem 0;
+      height: 8px;
+      border-radius: 4px;
+      background: #388e3c;
+    }
+
+    .game-card {
+      background: #388e3c;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      text-align: center;
+      border: 1px solid #4caf50;
+    }
+
+    .game-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .game-controls button {
+      min-width: 120px;
+    }
+
+    .setup-section {
+      margin-bottom: 2rem;
+    }
+
+    .setup-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .setup-controls mat-form-field {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .preset-controls {
+      text-align: center;
+    }
+
+    .preset-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .preset-buttons button {
+      min-width: 150px;
+    }
+
+    .preset-buttons button.active {
+      background: #ffeb3b;
+      color: #333;
+    }
+
+    .score-section {
+      margin-bottom: 2rem;
+    }
+
+    .score-display {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .team-score {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .team-name {
+      font-weight: 500;
+      font-size: 1.125rem;
+    }
+
+    .score-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .score {
+      font-size: 2rem;
+      font-weight: bold;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .vs-divider {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffeb3b;
+    }
+
+    .instructions-section ol {
+      padding-left: 1.5rem;
+    }
+
+    .instructions-section li {
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .basketball-header h1 {
+        font-size: 2rem;
+      }
+
+      .court {
+        height: 150px;
+      }
+
+      .score-display {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .game-controls {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .game-controls button {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      .setup-controls {
+        flex-direction: column;
+      }
+
+      .setup-controls mat-form-field {
+        width: 100%;
+      }
+
+      .preset-buttons {
+        flex-direction: column;
+      }
+
+      .preset-buttons button {
+        width: 100%;
+        max-width: 200px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .basketball-timer-container {
+        padding: 0.75rem;
+      }
+
+      .court {
+        height: 120px;
+      }
+    }

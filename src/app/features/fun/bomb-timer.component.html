@@ -1,0 +1,204 @@
+
+    <div class="bomb-timer-container">
+      <!-- Header -->
+      <header class="bomb-header">
+        <h1>
+          <mat-icon>whatshot</mat-icon>
+          Bomb Timer
+        </h1>
+        <p>How long can you defuse the bomb before it explodes?</p>
+      </header>
+
+      <!-- Bomb Visualizer -->
+      <section class="bomb-visualizer">
+        <div class="bomb-container" 
+             [class.ticking]="isRunning() && timeRemaining() > 10000"
+             [class.warning]="isRunning() && timeRemaining() <= 10000 && timeRemaining() > 5000"
+             [class.critical]="isRunning() && timeRemaining() <= 5000"
+             [class.exploded]="isExploded()"
+             [class.defused]="isDefused()">
+          <div class="bomb-body">
+            <div class="bomb-display">
+              <app-time-display
+                [time]="formattedTime()"
+                [status]="timerStatus()"
+                size="large"
+                [animate]="isRunning()">
+              </app-time-display>
+            </div>
+            
+            <div class="bomb-details">
+              <div class="bomb-label">BOMB-A-LOT</div>
+              <div class="serial-number">SN: {{ serialNumber() }}</div>
+            </div>
+            
+            <div class="bomb-wires">
+              <div class="wire red"></div>
+              <div class="wire blue"></div>
+              <div class="wire yellow"></div>
+              <div class="wire green"></div>
+            </div>
+          </div>
+          
+          <div class="bomb-cap"></div>
+          <div class="bomb-shadow"></div>
+        </div>
+      </section>
+
+      <!-- Timer Controls -->
+      <section class="timer-section">
+        <mat-card class="timer-card">
+          <mat-card-content>
+            <mat-progress-bar 
+              mode="determinate" 
+              [value]="progress()"
+              class="timer-progress"
+              [class.warning]="timeRemaining() <= 10000 && timeRemaining() > 5000"
+              [class.critical]="timeRemaining() <= 5000">
+            </mat-progress-bar>
+            
+            <div class="timer-controls">
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="startTimer()"
+                [disabled]="isRunning() || timeRemaining() === 0"
+                *ngIf="!isExploded() && !isDefused()">
+                <mat-icon>play_arrow</mat-icon>
+                Arm Bomb
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="accent"
+                (click)="pauseTimer()"
+                *ngIf="isRunning()">
+                <mat-icon>pause</mat-icon>
+                Pause
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="warn"
+                (click)="resetTimer()"
+                *ngIf="isRunning() || isExploded() || isDefused() || timeRemaining() < initialTime()">
+                <mat-icon>replay</mat-icon>
+                Reset
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="defuseBomb()"
+                *ngIf="isRunning() && !isExploded() && !isDefused()">
+                <mat-icon>check</mat-icon>
+                Defuse Bomb
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Setup Section -->
+      <section class="setup-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>settings</mat-icon>
+              Bomb Settings
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="setup-controls">
+              <mat-form-field appearance="fill">
+                <mat-label>Minutes</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="setupMinutes" 
+                  min="1" 
+                  max="59"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <mat-form-field appearance="fill">
+                <mat-label>Seconds</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="setupSeconds" 
+                  min="0" 
+                  max="59"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <button 
+                mat-raised-button 
+                (click)="setBombTime()"
+                [disabled]="isRunning() || (setupMinutes === 0 && setupSeconds === 0)">
+                Set Timer
+              </button>
+            </div>
+            
+            <div class="difficulty-controls">
+              <h3>Difficulty Level</h3>
+              <div class="difficulty-buttons">
+                <button 
+                  mat-stroked-button
+                  [class.active]="difficulty() === 'easy'"
+                  (click)="setDifficulty('easy')"
+                  [disabled]="isRunning()">
+                  Easy (30s)
+                </button>
+                <button 
+                  mat-stroked-button
+                  [class.active]="difficulty() === 'medium'"
+                  (click)="setDifficulty('medium')"
+                  [disabled]="isRunning()">
+                  Medium (15s)
+                </button>
+                <button 
+                  mat-stroked-button
+                  [class.active]="difficulty() === 'hard'"
+                  (click)="setDifficulty('hard')"
+                  [disabled]="isRunning()">
+                  Hard (5s)
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+              </section>
+              
+              <!-- Ad Slot -->
+              <section class="ad-section">
+                <app-ad-slot
+                  size="rectangle"
+                  position="inline"
+                  [showPlaceholder]="true"
+                  class="inline-ad">
+                </app-ad-slot>
+              </section>
+              
+              <!-- Instructions Section -->
+              <section class="instructions-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>help</mat-icon>
+              How to Defuse
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <ol class="instructions-list">
+              <li>Set your desired time or choose a difficulty level</li>
+              <li>Click "Arm Bomb" to start the countdown</li>
+              <li>Watch the bomb display - it gets more dangerous as time runs out</li>
+              <li>Click "Defuse Bomb" before time runs out to win</li>
+              <li>If time reaches zero, the bomb explodes!</li>
+            </ol>
+          </mat-card-content>
+        </mat-card>
+      </section>
+    </div>
+  

@@ -1,0 +1,192 @@
+
+    <div class="egg-timer-container">
+      <!-- Header -->
+      <header class="egg-header">
+        <h1>
+          <mat-icon>egg</mat-icon>
+          Egg Timer
+        </h1>
+        <p>Perfect timing for soft, medium, and hard-boiled eggs</p>
+      </header>
+
+      <!-- Egg Visualizer -->
+      <section class="egg-visualizer">
+        <div class="egg-container" [class.cooking]="isRunning()">
+          <div class="egg-shell">
+            <div class="egg-white">
+              <div class="egg-yolk" 
+                   [style.height.%]="yolkHeight()"
+                   [class.cooked]="isCompleted()">
+              </div>
+            </div>
+          </div>
+          <div class="egg-shadow"></div>
+        </div>
+      </section>
+
+      <!-- Timer Display -->
+      <section class="timer-section">
+        <mat-card class="timer-card">
+          <mat-card-content>
+            <app-time-display
+              [time]="formattedTime()"
+              [status]="timerDisplayStatus()"
+              size="large"
+              [animate]="isRunning()">
+            </app-time-display>
+            
+            <mat-progress-bar 
+              mode="determinate" 
+              [value]="progress()"
+              class="timer-progress">
+            </mat-progress-bar>
+            
+            <div class="timer-controls">
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="startTimer()"
+                [disabled]="isRunning() || timeRemaining() === 0"
+                *ngIf="!isCompleted()">
+                <mat-icon>play_arrow</mat-icon>
+                Start Cooking
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="accent"
+                (click)="pauseTimer()"
+                *ngIf="isRunning()">
+                <mat-icon>pause</mat-icon>
+                Pause
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="warn"
+                (click)="resetTimer()"
+                *ngIf="isRunning() || isCompleted() || timeRemaining() < initialTime()">
+                <mat-icon>replay</mat-icon>
+                Reset
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="resetTimer()"
+                *ngIf="isCompleted()">
+                <mat-icon>replay</mat-icon>
+                Cook Again
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Preset Selection -->
+      <section class="presets-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>restaurant</mat-icon>
+              Egg Doneness Presets
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="presets-grid">
+              <button 
+                mat-stroked-button
+                *ngFor="let preset of presets"
+                class="preset-button"
+                [class.active]="selectedPreset() === preset.name"
+                (click)="selectPreset(preset)"
+                [disabled]="isRunning()">
+                <div class="preset-icon">
+                  <mat-icon [style.color]="preset.color">{{ preset.icon }}</mat-icon>
+                </div>
+                <div class="preset-info">
+                  <span class="preset-name">{{ preset.name }}</span>
+                  <span class="preset-time">{{ preset.time }} minutes</span>
+                  <span class="preset-description">{{ preset.description }}</span>
+                </div>
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Custom Timer -->
+      <section class="custom-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>tune</mat-icon>
+              Custom Cooking Time
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="custom-controls">
+              <mat-form-field appearance="fill">
+                <mat-label>Minutes</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="customMinutes" 
+                  min="1" 
+                  max="30"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <mat-form-field appearance="fill">
+                <mat-label>Seconds</mat-label>
+                <input 
+                  matInput 
+                  type="number" 
+                  [(ngModel)]="customSeconds" 
+                  min="0" 
+                  max="59"
+                  [disabled]="isRunning()">
+              </mat-form-field>
+              
+              <button 
+                mat-raised-button 
+                (click)="setCustomTime()"
+                [disabled]="isRunning() || (customMinutes === 0 && customSeconds === 0)">
+                Set Custom Time
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+              </section>
+              
+              <!-- Ad Slot -->
+              <section class="ad-section">
+                <app-ad-slot
+                  size="rectangle"
+                  position="inline"
+                  [showPlaceholder]="true"
+                  class="inline-ad">
+                </app-ad-slot>
+              </section>
+              
+              <!-- Tips Section -->
+              <section class="tips-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>tips_and_updates</mat-icon>
+              Egg Cooking Tips
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <ul class="tips-list">
+              <li>Start with cold water for easier peeling</li>
+              <li>Add a pinch of salt to the water to prevent cracking</li>
+              <li>Use a timer for consistent results</li>
+              <li>Transfer to ice water after cooking to stop the process</li>
+              <li>Older eggs (1-2 weeks) peel more easily than fresh ones</li>
+            </ul>
+          </mat-card-content>
+        </mat-card>
+      </section>
+    </div>
