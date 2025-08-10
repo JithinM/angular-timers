@@ -1,0 +1,52 @@
+Folder "./scully" doesn't seem to contain custom plugins
+(You can skip this, or any future question by using the --noPrompt flag)
+We could not find "dist/tsconfig.app.json". Using the apps source folder as source. This might lead to unpredictable results
+We encountered a problem while reading the routes from your applications source.
+This might happen when there are lazy-loaded routes, that are not loaded,
+Or when there are paths we can not resolve statically.
+Check the routes in your app, rebuild and retry.
+(You can inspect the error by passing the --showGuessError flag
+
+When there are extraRoutes in your config, we will still try to render those.
+
+
+
+Folder "./scully" doesn't seem to contain custom plugins
+----------------------------------Using stored unhandled routes!.   To discover new routes in the angular app use "npx scully --scanRoutes"----------------------------------
+
+
+
+Folder "./scully" doesn't seem to contain custom plugins
+We could not find "dist/tsconfig.app.json". Using the apps source folder as source. This might lead to unpredictable results
+We encountered a problem while reading the routes from your applications source.
+This might happen when there are lazy-loaded routes, that are not loaded,
+Or when there are paths we can not resolve statically.
+Check the routes in your app, rebuild and retry.
+(You can inspect the error by passing the --showGuessError flag
+
+When there are extraRoutes in your config, we will still try to render those.
+
+
+
+Folder "./scully" doesn't seem to contain custom plugins
+
+We encountered a problem while reading the routes from your applications source.
+This might happen when there are lazy-loaded routes, that are not loaded,
+Or when there are paths we can not resolve statically.
+Check the routes in your app, rebuild and retry.
+(You can inspect the error by passing the --showGuessError flag
+
+When there are extraRoutes in your config, we will still try to render those.
+
+
+Folder "./scully" doesn't seem to contain custom plugins
+
+We encountered a problem while reading the routes from your applications source.
+This might happen when there are lazy-loaded routes, that are not loaded,
+Or when there are paths we can not resolve statically.
+Check the routes in your app, rebuild and retry.
+(You can inspect the error by passing the --showGuessError flag
+
+When there are extraRoutes in your config, we will still try to render those.
+
+

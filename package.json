@@ -1,6 +1,6 @@
 {
   "name": "angular-timers",
-  "version": "0.1.8",
+  "version": "0.1.16",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -17,7 +17,10 @@
     "increment-version:minor": "node scripts/increment-version.js minor",
     "increment-version:major": "node scripts/increment-version.js major",
     "version": "npm run increment-version",
-    "prebuild": "npm run increment-version && npm run generate-sitemap && npm run generate-build-info"
+    "prebuild": "npm run increment-version && npm run generate-sitemap && npm run generate-build-info",
+    "build:scully": "npm run build && npx scully --project angular-timers",
+    "serve:scully": "npx scully serve --project angular-timers",
+    "scully": "npx scully --project angular-timers"
   },
   "private": true,
   "dependencies": {
@@ -34,6 +37,7 @@
     "@angular/router": "^18.2.13",
     "@angular/service-worker": "^18.2.13",
     "@angular/ssr": "^18.2.20",
+    "@scullyio/init": "^2.1.21",
     "express": "^4.18.2",
     "ngx-sitemap": "^1.0.0",
     "rxjs": "~7.8.0",
@@ -45,6 +49,8 @@
     "@angular/cli": "^18.2.20",
     "@angular/compiler-cli": "^18.2.13",
     "@angular/pwa": "^18.2.20",
+    "@scullyio/scully": "^2.1.41",
+    "@scullyio/scully-plugin-puppeteer": "^2.1.41",
     "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^18.18.0",

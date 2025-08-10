@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://timersandtools.com/sitemap.xml
+
+# Disallow admin or private areas (if any)
+Disallow: /settings
+Disallow: /test-background
+
+# Allow all timer tools
+Allow: /stopwatch
+Allow: /timer
+Allow: /timer/interval
+Allow: /timer/pomodoro
+Allow: /timer/meditation
+Allow: /clock
+Allow: /clock/alarm
+Allow: /clock/conversion
+Allow: /clock/days-between
+Allow: /fun/egg-timer
+Allow: /fun/bomb-timer
+Allow: /fun/classroom/basketball
+Allow: /fun/classroom/hockey
+Allow: /fun/classroom/presentation
+Allow: /stats
+Allow: /achievements
+Allow: /about
+
+# Crawl delay (optional)
+Crawl-delay: 1
