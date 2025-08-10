@@ -308,6 +308,23 @@
     }
   }
 }
+
+/* When any page enters fullscreen, hide global chrome */
+:fullscreen .app-header,
+:fullscreen .ad-section,
+:fullscreen .ads-sidebar,
+:fullscreen .app-footer,
+:fullscreen .content-wrapper { 
+  display: none !important; 
+}
+
+:fullscreen .app-main { 
+  display: block !important; 
+  width: 100vw; 
+  height: 100vh; 
+  margin: 0; 
+  padding: 0; 
+}
  
 /* Scrollbar styling for sidebar */
 .ads-sidebar::-webkit-scrollbar {

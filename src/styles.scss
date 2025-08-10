@@ -33,6 +33,13 @@ html, body {
   background-color: #fafafa;
 }
 
+/* Ensure fullscreen root uses the viewport without margins */
+:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* Custom CSS Variables for Timer Theme */
 :root {
   --primary-color: #1976d2;

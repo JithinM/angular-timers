@@ -1,11 +1,20 @@
 
-    <div class="egg-timer-container">
+    <div class="egg-timer-container" [class.fullscreen]="isFullscreen">
       <!-- Header -->
       <header class="egg-header">
         <h1>
           <mat-icon>egg</mat-icon>
           Egg Timer
         </h1>
+        <div class="header-controls">
+          <button 
+            mat-icon-button 
+            [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+            (click)="toggleFullscreen()"
+            class="fullscreen-btn">
+            <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          </button>
+        </div>
         <p>Perfect timing for soft, medium, and hard-boiled eggs</p>
       </header>
 
@@ -25,7 +34,7 @@
       </section>
 
       <!-- Timer Display -->
-      <section class="timer-section">
+      <section class="timer-section" [class.compact]="isFullscreen">
         <mat-card class="timer-card">
           <mat-card-content>
             <app-time-display
@@ -84,7 +93,7 @@
       </section>
 
       <!-- Preset Selection -->
-      <section class="presets-section">
+      <section class="presets-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
@@ -116,7 +125,7 @@
       </section>
 
       <!-- Custom Timer -->
-      <section class="custom-section">
+      <section class="custom-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
@@ -160,7 +169,7 @@
               </section>
               
               <!-- Ad Slot -->
-              <section class="ad-section">
+      <section class="ad-section" *ngIf="!isFullscreen">
                 <app-ad-slot
                   size="rectangle"
                   position="inline"
@@ -170,7 +179,7 @@
               </section>
               
               <!-- Tips Section -->
-              <section class="tips-section">
+      <section class="tips-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>

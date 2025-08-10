@@ -5,12 +5,50 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
   color: white;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    padding: 2rem;
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .bomb-header,
+    .bomb-visualizer,
+    .timer-section,
+    .setup-section,
+    .instructions-section,
+    .ad-section {
+      text-align: center;
+    }
+
+    .timer-section {
+      margin-bottom: 2rem;
+    }
+  }
 }
 
 .bomb-header {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
   padding: 1rem;
+
+  .header-controls {
+    display: flex;
+    gap: 0.5rem;
+  }
 }
 
 .bomb-header h1 {
@@ -56,6 +94,11 @@
 
 .timer-section {
   margin-bottom: 2rem;
+}
+
+.timer-section.compact .timer-card {
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .bomb-display {

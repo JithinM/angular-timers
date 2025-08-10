@@ -6,10 +6,40 @@
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
 
+    .egg-timer-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      padding: 2rem;
+      width: 100vw;
+      max-width: 100vw;
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      .egg-visualizer,
+      .timer-section {
+        text-align: center;
+      }
+    }
+
     .egg-header {
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 2rem;
       padding: 1rem;
+
+      .header-controls {
+        display: flex;
+        gap: 0.5rem;
+      }
     }
 
     .egg-header h1 {
@@ -93,6 +123,11 @@
 
     .timer-section {
       margin-bottom: 2rem;
+    }
+
+    .timer-section.compact .timer-card {
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     .timer-card {

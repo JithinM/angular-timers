@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { TimerService } from '../../core/services/timer.service';
 import { AudioService } from '../../core/services/audio.service';
@@ -27,6 +28,7 @@ import { SeoService } from '../../core/services/seo.service';
     FormsModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -39,7 +41,7 @@ import { SeoService } from '../../core/services/seo.service';
   templateUrl: './egg-timer.component.html',
   styleUrls: ['./egg-timer.component.scss']
 })
-export class EggTimerComponent implements OnInit {
+export class EggTimerComponent implements OnInit, OnDestroy {
   customMinutes = 5;
   customSeconds = 0;
 
@@ -117,6 +119,10 @@ export class EggTimerComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', this.keyboardHandler);
+      document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+    }
     // Only set default if no timer is already configured
     if (this.initialTime() === 0) {
       // Set default to medium-boiled preset without auto-starting
@@ -128,6 +134,14 @@ export class EggTimerComponent implements OnInit {
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Egg Timer', '6 Minute');
+  }
+
+  ngOnDestroy(): void {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', this.keyboardHandler);
+      document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
+    }
+    this.exitFullscreen();
   }
 
   selectPreset(preset: any): void {
@@ -195,6 +209,8 @@ export class EggTimerComponent implements OnInit {
 
   private wasCompleted = false;
   private lastCompletionTimestamp = 0;
+  isFullscreen = false;
+  private keyboardHandler = this.onKeyDown.bind(this);
 
   constructor() {
     // Effect to handle timer completion
@@ -238,4 +254,55 @@ export class EggTimerComponent implements OnInit {
       // User clicked "Enjoy"
     });
   }
+
+  // Fullscreen methods
+  toggleFullscreen(): void {
+    if (this.isFullscreen) {
+      this.exitFullscreen();
+    } else {
+      this.enterFullscreen();
+    }
+  }
+
+  private enterFullscreen(): void {
+    if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        if (('orientation' in screen) && (screen as any).orientation?.lock) {
+          (screen as any).orientation.lock('landscape').catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }
+
+  private exitFullscreen(): void {
+    if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().finally(() => {
+        if (('orientation' in screen) && (screen as any).orientation?.unlock) {
+          try { (screen as any).orientation.unlock(); } catch (_) {}
+        }
+      });
+    }
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    switch (event.key.toLowerCase()) {
+      case 'f':
+        event.preventDefault();
+        this.toggleFullscreen();
+        break;
+      case 'escape':
+        if (this.isFullscreen) {
+          event.preventDefault();
+          this.exitFullscreen();
+        }
+        break;
+    }
+  }
+
+  private handleFullscreenChange = (): void => {
+    this.isFullscreen = typeof document !== 'undefined' ? !!document.fullscreenElement : false;
+  };
 }

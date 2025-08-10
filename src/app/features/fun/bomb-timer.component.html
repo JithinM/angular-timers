@@ -1,11 +1,20 @@
 
-    <div class="bomb-timer-container">
+    <div class="bomb-timer-container" [class.fullscreen]="isFullscreen">
       <!-- Header -->
       <header class="bomb-header">
         <h1>
           <mat-icon>whatshot</mat-icon>
           Bomb Timer
         </h1>
+        <div class="header-controls">
+          <button
+            mat-icon-button
+            [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+            (click)="toggleFullscreen()"
+            class="fullscreen-btn">
+            <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          </button>
+        </div>
         <p>How long can you defuse the bomb before it explodes?</p>
       </header>
 
@@ -46,7 +55,7 @@
       </section>
 
       <!-- Timer Controls -->
-      <section class="timer-section">
+      <section class="timer-section" [class.compact]="isFullscreen">
         <mat-card class="timer-card">
           <mat-card-content>
             <mat-progress-bar 
@@ -100,7 +109,7 @@
       </section>
 
       <!-- Setup Section -->
-      <section class="setup-section">
+      <section class="setup-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
@@ -170,8 +179,8 @@
         </mat-card>
               </section>
               
-              <!-- Ad Slot -->
-              <section class="ad-section">
+      <!-- Ad Slot -->
+      <section class="ad-section" *ngIf="!isFullscreen">
                 <app-ad-slot
                   size="rectangle"
                   position="inline"
@@ -180,8 +189,8 @@
                 </app-ad-slot>
               </section>
               
-              <!-- Instructions Section -->
-              <section class="instructions-section">
+      <!-- Instructions Section -->
+      <section class="instructions-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>

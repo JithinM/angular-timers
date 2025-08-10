@@ -56,7 +56,7 @@ interface TimerTool {
             Free Online Timers, Stopwatches & Tools
           </h1>
           <p class="hero-subtitle">
-            Perfect timing tools for cooking, exercise, study sessions, and work breaks
+            Perfect timing tools for study, presentations, work and exercise
           </p>
         </div>
       </section>

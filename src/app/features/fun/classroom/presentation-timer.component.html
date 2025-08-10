@@ -1,10 +1,19 @@
-<div class="presentation-timer-container">
+<div class="presentation-timer-container" [class.fullscreen]="isFullscreen">
   <!-- Header -->
   <header class="presentation-header">
     <h1>
       <mat-icon>presentation_chart</mat-icon>
       Presentation Timer
     </h1>
+    <div class="header-controls">
+      <button 
+        mat-icon-button 
+        [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+        (click)="toggleFullscreen()"
+        class="fullscreen-btn">
+        <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      </button>
+    </div>
     <p>Keep your presentations on track with timed segments</p>
   </header>
 
@@ -95,7 +104,7 @@
   </section>
 
   <!-- Segment Setup -->
-  <section class="segment-section">
+  <section class="segment-section" *ngIf="!isFullscreen">
     <mat-card>
       <mat-card-header>
         <mat-card-title>
@@ -178,7 +187,7 @@
   </section>
   
   <!-- Ad Slot -->
-  <section class="ad-section">
+  <section class="ad-section" *ngIf="!isFullscreen">
     <app-ad-slot
       size="rectangle"
       position="inline"
@@ -188,7 +197,7 @@
   </section>
   
   <!-- Presentation Tips -->
-  <section class="tips-section">
+  <section class="tips-section" *ngIf="!isFullscreen">
     <mat-card>
       <mat-card-header>
         <mat-card-title>

@@ -1,11 +1,20 @@
 
-    <div class="hockey-timer-container">
+    <div class="hockey-timer-container" [class.fullscreen]="isFullscreen">
       <!-- Header -->
       <header class="hockey-header">
         <h1>
           <mat-icon>sports_hockey</mat-icon>
           Hockey Timer
         </h1>
+        <div class="header-controls">
+          <button 
+            mat-icon-button 
+            [matTooltip]="isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'"
+            (click)="toggleFullscreen()"
+            class="fullscreen-btn">
+            <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          </button>
+        </div>
         <p>Perfect for classroom hockey games and activities</p>
       </header>
 
@@ -43,7 +52,7 @@
       </section>
 
       <!-- Game Controls -->
-      <section class="game-section">
+      <section class="game-section" [class.compact]="isFullscreen">
         <mat-card class="game-card">
           <mat-card-content>
             <div class="period-display">
@@ -110,7 +119,7 @@
       </section>
 
       <!-- Setup Section -->
-      <section class="setup-section">
+      <section class="setup-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
@@ -181,7 +190,7 @@
       </section>
 
       <!-- Penalty Tracker -->
-      <section class="penalty-section">
+      <section class="penalty-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>
@@ -224,7 +233,7 @@
               </section>
               
               <!-- Ad Slot -->
-              <section class="ad-section">
+      <section class="ad-section" *ngIf="!isFullscreen">
                 <app-ad-slot
                   size="rectangle"
                   position="inline"
@@ -234,7 +243,7 @@
               </section>
               
               <!-- Instructions Section -->
-              <section class="instructions-section">
+      <section class="instructions-section" *ngIf="!isFullscreen">
         <mat-card>
           <mat-card-header>
             <mat-card-title>

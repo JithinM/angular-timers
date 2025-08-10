@@ -7,10 +7,112 @@
       color: white;
     }
 
-    .basketball-header {
+    .basketball-timer-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      padding: 2rem;
+      width: 100vw;
+      max-width: 100vw;
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      .basketball-header {
+        position: absolute;
+        top: 2rem;
+        width: 100%;
+        max-width: 800px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 2rem;
+        
+        h1, p { 
+          display: none; 
+        }
+        
+        .header-controls {
+          margin-left: auto;
+        }
+      }
+
+      .court-visualizer {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 0;
+        width: 100%;
+        
+        .court-container {
+          max-width: 600px;
+          width: 100%;
+        }
+        
+        .court {
+          height: 300px;
+          width: 100%;
+          position: relative;
+        }
+      }
+
+      .game-section {
+        margin-top: 2rem;
+        
+        .game-card {
+          max-width: 500px;
+        }
+      }
+
+      .court-timer-display {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 1rem;
+        border-radius: 8px;
+        min-width: 200px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+      }
+    }
+
+    .court-timer-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1rem;
+      border-radius: 8px;
+      min-width: 200px;
       text-align: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .basketball-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 2rem;
       padding: 1rem;
+
+      .header-controls {
+        display: flex;
+        gap: 0.5rem;
+      }
     }
 
     .basketball-header h1 {
@@ -133,6 +235,11 @@
 
     .game-section {
       margin-bottom: 2rem;
+    }
+
+    .game-section.compact .game-card {
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     .period-display {

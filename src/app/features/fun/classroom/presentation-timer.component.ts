@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatListModule } from '@angular/material/list';
 
 import { AudioService } from '../../../core/services/audio.service';
@@ -38,6 +39,7 @@ interface PresentationSegment {
     MatInputModule,
     MatProgressBarModule,
     MatSnackBarModule,
+    MatTooltipModule,
     MatListModule,
     TimeDisplayComponent,
     AdSlotComponent
@@ -45,7 +47,7 @@ interface PresentationSegment {
   templateUrl: './presentation-timer.component.html',
   styleUrls: ['./presentation-timer.component.scss']
 })
-export class PresentationTimerComponent implements OnInit {
+export class PresentationTimerComponent implements OnInit, OnDestroy {
   newSegmentTitle = '';
   newSegmentDuration = 5; // minutes
 
@@ -122,6 +124,8 @@ export class PresentationTimerComponent implements OnInit {
   });
 
   private lastCompletionTimestamp = 0;
+  isFullscreen = false;
+  private keyboardHandler = this.onKeyDown.bind(this);
 
   constructor() {
     // Effect to handle segment completion with intelligent duplicate prevention
@@ -140,6 +144,10 @@ export class PresentationTimerComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', this.keyboardHandler);
+      document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+    }
     // Only load sample segments if no segments exist
     if (this.segments().length === 0) {
       this.loadSampleSegments();
@@ -147,6 +155,14 @@ export class PresentationTimerComponent implements OnInit {
     
     // Set initial SEO metadata
     this.seoService.updateTimerToolSeo('Presentation Timer', '30 Minute');
+  }
+
+  ngOnDestroy(): void {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', this.keyboardHandler);
+      document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
+    }
+    this.exitFullscreen();
   }
 
   addSegment(): void {
@@ -286,6 +302,57 @@ export class PresentationTimerComponent implements OnInit {
       });
     }
   }
+
+  // Fullscreen methods
+  toggleFullscreen(): void {
+    if (this.isFullscreen) {
+      this.exitFullscreen();
+    } else {
+      this.enterFullscreen();
+    }
+  }
+
+  private enterFullscreen(): void {
+    if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        if (('orientation' in screen) && (screen as any).orientation?.lock) {
+          (screen as any).orientation.lock('landscape').catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }
+
+  private exitFullscreen(): void {
+    if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().finally(() => {
+        if (('orientation' in screen) && (screen as any).orientation?.unlock) {
+          try { (screen as any).orientation.unlock(); } catch (_) {}
+        }
+      });
+    }
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    switch (event.key.toLowerCase()) {
+      case 'f':
+        event.preventDefault();
+        this.toggleFullscreen();
+        break;
+      case 'escape':
+        if (this.isFullscreen) {
+          event.preventDefault();
+          this.exitFullscreen();
+        }
+        break;
+    }
+  }
+
+  private handleFullscreenChange = (): void => {
+    this.isFullscreen = typeof document !== 'undefined' ? !!document.fullscreenElement : false;
+  };
 
   nextSegment(): void {
     const segments = this.segments();
