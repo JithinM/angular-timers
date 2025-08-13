@@ -1,5 +1,7 @@
 /* Angular Material Theme Setup */
 @use '@angular/material' as mat;
+@use './styles/mixins' as mixins;
+@use './styles/utilities' as *;
 
 @include mat.core();
 
@@ -51,6 +53,9 @@ html, body {
   --text-primary: rgba(0, 0, 0, 0.87);
   --text-secondary: rgba(0, 0, 0, 0.54);
   --border-color: rgba(0, 0, 0, 0.12);
+  /* RGB variants for translucency */
+  --primary-color-rgb: 25, 118, 210;
+  --accent-color-rgb: 255, 152, 0;
   
   /* Timer specific colors */
   --timer-display-bg: #ffffff;
@@ -189,3 +194,5 @@ html, body {
     display: none !important;
   }
 }
+
+/* Shared mixins and utilities loaded above */

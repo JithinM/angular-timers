@@ -1,4 +1,4 @@
-<div class="interval-container" [class.fullscreen]="isFullscreen">
+<div class="interval-container page-container page-bg--background" [class.fullscreen]="isFullscreen">
   <!-- Top Ad Banner -->
   <app-ad-slot
     size="banner"
@@ -12,13 +12,13 @@
     <div class="setup-header">
       <h1 class="interval-title">Interval Timer</h1>
       <div class="header-controls">
-        <button 
+        <!-- <button 
           mat-icon-button 
           matTooltip="Go Home"
           (click)="goHome()"
           class="home-btn">
           <mat-icon>home</mat-icon>
-        </button>
+        </button> -->
         
         <button 
           mat-icon-button 
@@ -33,12 +33,12 @@
     <!-- Preset Workouts -->
     <div class="presets-section">
       <h3>Popular Workouts</h3>
-      <div class="preset-grid">
+      <div class="preset-grid grid-auto-320">
         <mat-card 
           *ngFor="let preset of intervalPresets; trackBy: trackByPreset"
           (click)="selectPreset(preset)"
           [class.selected]="selectedPreset() === preset"
-          class="preset-card">
+          class="preset-card card--interactive">
           <mat-card-header>
             <mat-card-title>{{ preset.name }}</mat-card-title>
             <mat-card-subtitle>{{ preset.description }}</mat-card-subtitle>
@@ -59,9 +59,9 @@
     <div class="custom-setup-section">
       <h3>Custom Interval</h3>
       
-      <div class="setup-grid">
+      <div class="setup-grid grid-auto-250">
         <!-- Work Time -->
-        <mat-card class="setup-card">
+        <mat-card class="setup-card card--interactive">
           <mat-card-header>
             <mat-card-title>
               <mat-icon color="warn">fitness_center</mat-icon>
@@ -98,7 +98,7 @@
         </mat-card>
 
         <!-- Rest Time -->
-        <mat-card class="setup-card">
+        <mat-card class="setup-card card--interactive">
           <mat-card-header>
             <mat-card-title>
               <mat-icon color="primary">self_improvement</mat-icon>
@@ -135,7 +135,7 @@
         </mat-card>
 
         <!-- Cycles -->
-        <mat-card class="setup-card">
+        <mat-card class="setup-card card--interactive">
           <mat-card-header>
             <mat-card-title>
               <mat-icon>repeat</mat-icon>
@@ -258,6 +258,7 @@
         [isRunning]="isRunning()"
         layout="horizontal"
         (action)="onTimerAction($event)"
+        [showSettings]="false"
         [showLap]="false">
       </app-control-buttons>
       

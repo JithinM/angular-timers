@@ -10,21 +10,21 @@
         <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
       </button>
       
-      <button 
+      <!-- <button 
         mat-icon-button 
         matTooltip="Settings"
         class="settings-btn">
         <mat-icon>settings</mat-icon>
-      </button>
+      </button> -->
       
-      <button 
+      <!-- <button 
         mat-icon-button 
         matTooltip="Export Data"
         (click)="exportLaps()"
         class="export-btn"
         [disabled]="laps().length === 0">
         <mat-icon>download</mat-icon>
-      </button>
+      </button> -->
     </div>
   </div>
 
@@ -51,6 +51,7 @@
         [isRunning]="timerService.stopwatchState().isRunning"
         layout="horizontal"
         (action)="onTimerAction($event)"
+        [showSettings]="false"
         [showLap]="true">
       </app-control-buttons>
     </div>

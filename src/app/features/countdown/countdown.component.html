@@ -12,13 +12,7 @@
     <div class="setup-header">
       <h1 class="countdown-title">Countdown Timer</h1>
       <div class="header-controls">
-        <button 
-          mat-icon-button 
-          matTooltip="Go Home"
-          (click)="goHome()"
-          class="home-btn">
-          <mat-icon>home</mat-icon>
-        </button>
+        
         
         <button 
           mat-icon-button 
@@ -120,12 +114,6 @@
           <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
         </button>
         
-        <button 
-          mat-icon-button 
-          matTooltip="Settings"
-          class="settings-btn">
-          <mat-icon>settings</mat-icon>
-        </button>
       </div>
     </div>
 
@@ -175,6 +163,7 @@
         [isRunning]="isRunning()"
         layout="horizontal"
         (action)="onTimerAction($event)"
+        [showSettings]="false"
         [showLap]="false">
       </app-control-buttons>
     </div>

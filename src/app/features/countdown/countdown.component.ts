@@ -201,6 +201,9 @@ export class CountdownComponent implements OnInit, OnDestroy {
       case 'reset':
         this.resetTimer();
         break;
+      case 'fullscreen':
+        this.toggleFullscreen();
+        break;
     }
   }
 

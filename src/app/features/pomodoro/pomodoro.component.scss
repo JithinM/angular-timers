@@ -2,9 +2,10 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 1.5rem;
   background: var(--mat-app-background-color);
   position: relative;
+  transition: all 0.3s ease-in-out;
 
   &.fullscreen {
     position: fixed;
@@ -14,21 +15,25 @@
     bottom: 0;
     z-index: 9999;
     background: var(--mat-app-background-color);
-    padding: 2rem;
+    padding: 2.5rem;
 
     .pomodoro-setup,
     .pomodoro-main {
       justify-content: center;
       align-items: center;
       text-align: center;
+      max-width: 1400px;
+      margin: 0 auto;
     }
 
     .session-display {
-      margin-bottom: 3rem;
+      margin-bottom: 4rem;
+      transform: scale(1.2);
+      transition: transform 0.3s ease;
     }
 
     .controls-section {
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
     }
   }
 }
@@ -47,24 +52,49 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem 0 1.5rem;
   border-bottom: 1px solid var(--mat-divider-color);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      var(--mat-app-primary),
+      transparent
+    );
+  }
 
   .pomodoro-title {
     margin: 0;
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--mat-app-on-surface);
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--mat-app-primary);
+    letter-spacing: -1px;
+    line-height: 1.2;
   }
 
   .header-controls {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
 
     button {
+      transition: all 0.2s ease;
+      border-radius: 12px;
+      
       &:hover {
         background-color: var(--mat-app-surface-variant);
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
       }
     }
   }
@@ -73,30 +103,74 @@
 // Presets Section
 .presets-section {
   h3 {
-    margin: 0 0 1rem 0;
-    font-size: 1.25rem;
-    font-weight: 400;
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 500;
     color: var(--mat-app-on-surface);
+    letter-spacing: -0.5px;
+    position: relative;
+    padding-bottom: 0.75rem;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: var(--mat-app-primary);
+      border-radius: 2px;
+    }
   }
 
   .preset-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 
     .preset-card {
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border: 2px solid transparent;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--mat-app-surface);
+
+      mat-card-header {
+        padding: 1.25rem 1.25rem 0.75rem;
+        background: rgba(var(--mat-primary-rgb), 0.03);
+
+        mat-card-title {
+          font-size: 1.25rem;
+          font-weight: 500;
+          margin-bottom: 0.5rem;
+        }
+
+        mat-card-subtitle {
+          opacity: 0.85;
+        }
+
+        mat-icon {
+          color: var(--mat-app-primary);
+          background: rgba(var(--mat-primary-rgb), 0.1);
+          padding: 0.75rem;
+          border-radius: 50%;
+        }
+      }
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
       }
 
       &.selected {
         border-color: var(--mat-app-primary);
-        background: rgba(var(--mat-primary-rgb), 0.05);
+        background: linear-gradient(to bottom right, 
+          rgba(var(--mat-primary-rgb), 0.05),
+          rgba(var(--mat-primary-rgb), 0.02)
+        );
+        box-shadow: 0 8px 24px rgba(var(--mat-primary-rgb), 0.15);
       }
 
       mat-card-header {
@@ -136,41 +210,74 @@
 // Custom Setup Section
 .custom-setup-section {
   h3 {
-    margin: 0 0 1rem 0;
-    font-size: 1.25rem;
-    font-weight: 400;
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 500;
     color: var(--mat-app-on-surface);
+    letter-spacing: -0.5px;
+    position: relative;
+    padding-bottom: 0.75rem;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: var(--mat-app-primary);
+      border-radius: 2px;
+    }
   }
 
   .setup-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2rem;
 
     .setup-card {
-      mat-card-title {
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      background: var(--mat-app-surface);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .mat-card-title {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        font-size: 1rem;
-        margin-bottom: 1rem;
+        gap: 0.75rem;
+        font-size: 1.15rem;
+        margin-bottom: 1.25rem;
+        padding: 1rem;
+        background: rgba(var(--mat-primary-rgb), 0.03);
+        border-bottom: 1px solid rgba(var(--mat-primary-rgb), 0.1);
+
+        mat-icon {
+          color: var(--mat-app-primary);
+          background: rgba(var(--mat-primary-rgb), 0.1);
+          padding: 0.5rem;
+          border-radius: 50%;
+        }
       }
 
-      .time-input,
-      .sessions-input {
-        width: 100%;
+      .mat-card-content {
+        padding: 1rem;
+
+        mat-form-field {
+          width: 100%;
+
+          input.time-input {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--mat-app-on-surface);
+          }
+        }
       }
     }
-  }
-
-  .start-custom-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
-    margin: 0 auto;
   }
 }
 

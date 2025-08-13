@@ -3,7 +3,7 @@ export const AppConfig = {
   // Ads configuration
   ads: {
     // Set to true to disable all ads across the application
-    disabled: true,
+    disabled: false,
     
     // Default ad unit IDs (these would be replaced with real IDs in production)
     adUnitIds: {

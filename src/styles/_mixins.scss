@@ -1,0 +1,50 @@
+// Breakpoint mixins
+$breakpoint-mobile: 768px;
+$breakpoint-small: 480px;
+$breakpoint-tablet: 1024px;
+$breakpoint-large: 1400px;
+
+@mixin mobile {
+  @media (max-width: #{$breakpoint-mobile}) {
+    @content;
+  }
+}
+
+@mixin small {
+  @media (max-width: #{$breakpoint-small}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: #{$breakpoint-tablet}) {
+    @content;
+  }
+}
+
+@mixin large {
+  @media (min-width: #{$breakpoint-large}) {
+    @content;
+  }
+}
+
+// Grid auto-fit utility mixin
+@mixin grid-auto($min: 280px, $gap: 1.5rem) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax($min, 1fr));
+  gap: $gap;
+}
+
+// Focus ring mixin
+@mixin focus-ring($color: var(--primary-color)) {
+  outline: 2px solid $color;
+  outline-offset: 2px;
+}
+
+// Reduced motion helper
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+

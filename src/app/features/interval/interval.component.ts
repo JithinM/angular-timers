@@ -163,9 +163,11 @@ export class IntervalComponent implements OnInit, OnDestroy {
       this.enterFullscreen();
     }
 
-    // Check if there's an existing interval timer
-    if (this.intervalState().totalCycles > 0) {
+    // Check if there's an existing running interval timer
+    if (this.intervalState().totalCycles > 0 && this.intervalState().isRunning) {
       this.showSetup.set(false);
+    } else {
+      this.showSetup.set(true);
     }
   }
 
@@ -188,6 +190,9 @@ export class IntervalComponent implements OnInit, OnDestroy {
         break;
       case 'reset':
         this.resetInterval();
+        break;
+      case 'fullscreen':
+        this.toggleFullscreen();
         break;
     }
   }

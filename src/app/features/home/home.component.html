@@ -1,0 +1,205 @@
+<div class="home-container page-container page-bg--primary-gradient">
+      <!-- Top Ad Banner -->
+      <app-ad-slot 
+        size="banner" 
+        position="top"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="container">
+          <h1 class="hero-title">
+            Free Online Timers, Stopwatches & Tools
+          </h1>
+          <p class="hero-subtitle">
+            Perfect timing tools for study, presentations, work and exercise
+          </p>
+        </div>
+      </section>
+
+      <!-- Featured Timers Section -->
+      <section class="featured-section">
+        <div class="container">
+          <h2 class="heading-section">Quick Access Timers</h2>
+          
+          <div class="featured-timers grid-auto-350">
+            <!-- Embedded Stopwatch -->
+            <mat-card class="timer-card card--interactive stopwatch-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>timer</mat-icon>
+                  Stopwatch
+                </mat-card-title>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <app-time-display
+                  [time]="timerService.formattedStopwatchTime()"
+                  [status]="timerService.stopwatchStatus()"
+                  size="medium">
+                </app-time-display>
+                
+                <app-control-buttons
+                  [isRunning]="timerService.stopwatchState().isRunning"
+                  [showLap]="true"
+                  [showFullscreen]="false"
+                  [showSettings]="false"
+                  layout="horizontal"
+                  (action)="onStopwatchAction($event)">
+                </app-control-buttons>
+              </mat-card-content>
+              
+              <mat-card-actions>
+                <button mat-button routerLink="/stopwatch">
+                  <mat-icon>open_in_new</mat-icon>
+                  Full View
+                </button>
+              </mat-card-actions>
+            </mat-card>
+
+            <!-- Embedded Countdown Timer -->
+            <mat-card class="timer-card card--interactive countdown-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>hourglass_empty</mat-icon>
+                  Countdown Timer
+                </mat-card-title>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <div class="btn-group">
+                  <button 
+                    *ngFor="let preset of quickPresets" 
+                    mat-stroked-button
+                    class="btn--preset"
+                    (click)="setCountdownPreset(preset.value)"
+                    [class.is-active]="timerService.countdownState().initialTime === preset.value"
+                  >
+                    {{ preset.label }}
+                  </button>
+                </div>
+                
+                <app-time-display
+                  [time]="timerService.formattedCountdownTime()"
+                  [status]="timerService.countdownStatus()"
+                  size="medium">
+                </app-time-display>
+                
+                <app-control-buttons
+                  [isRunning]="timerService.countdownState().isRunning"
+                  [showLap]="false"
+                  [showFullscreen]="false"
+                  [showSettings]="false"
+                  layout="horizontal"
+                  (action)="onCountdownAction($event)">
+                </app-control-buttons>
+              </mat-card-content>
+              
+              <mat-card-actions>
+                <button mat-button routerLink="/timer">
+                  <mat-icon>open_in_new</mat-icon>
+                  Full View
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tools Grid Section -->
+      <section class="tools-section">
+        <div class="container">
+          <h2 class="heading-section">All Timer Tools</h2>
+          
+          <div class="tools-grid grid-auto-280">
+            <mat-card 
+              *ngFor="let tool of timerTools" 
+              class="tool-card card--interactive"
+              [routerLink]="tool.route"
+              [class.featured]="tool.featured"
+              [class.popular]="tool.popular"
+            >
+              <mat-card-header>
+                <div mat-card-avatar>
+                  <mat-icon [color]="getCategoryColor(tool.category)">{{ tool.icon }}</mat-icon>
+                </div>
+                <mat-card-title>{{ tool.name }}</mat-card-title>
+                <mat-card-subtitle>{{ tool.category | titlecase }}</mat-card-subtitle>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <p>{{ tool.description }}</p>
+                
+                <div class="tool-badges">
+                  <mat-chip *ngIf="tool.featured" color="accent" selected>
+                    <mat-icon>star</mat-icon>
+                    Featured
+                  </mat-chip>
+                  <mat-chip *ngIf="tool.popular" color="primary" selected>
+                    <mat-icon>trending_up</mat-icon>
+                    Popular
+                  </mat-chip>
+                </div>
+              </mat-card-content>
+              
+              <mat-card-actions>
+                <button mat-button color="primary">
+                  <mat-icon>play_arrow</mat-icon>
+                  Start Timer
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar Ad (Desktop) -->
+      <app-ad-slot 
+        size="rectangle" 
+        position="sidebar"
+        [showPlaceholder]="true"
+        class="home-sidebar-ad no-print hide-mobile">
+      </app-ad-slot>
+
+      <!-- Recent Activity Section -->
+      <section class="recent-section" *ngIf="recentHistory.length > 0">
+        <div class="container">
+          <h2 class="section-title">Recent Activity</h2>
+          
+          <div class="recent-list">
+            <mat-card *ngFor="let entry of recentHistory; trackBy: trackByHistoryId" class="recent-item">
+              <mat-card-content>
+                <div class="recent-content">
+                  <div class="recent-info">
+                    <mat-icon>{{ getHistoryIcon(entry.type) }}</mat-icon>
+                    <div class="recent-details">
+                      <span class="recent-type">{{ entry.type | titlecase }}</span>
+                      <span class="recent-duration">{{ formatDuration(entry.duration) }}</span>
+                      <span class="recent-time">{{ formatRelativeTime(entry.timestamp) }}</span>
+                    </div>
+                  </div>
+                  <button 
+                    mat-icon-button 
+                    color="primary"
+                    [attr.aria-label]="'Repeat ' + entry.type + ' timer'"
+                    (click)="repeatTimer(entry)"
+                  >
+                    <mat-icon>replay</mat-icon>
+                  </button>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Ad Banner -->
+      <app-ad-slot 
+        size="banner" 
+        position="bottom"
+        [showPlaceholder]="true"
+        class="no-print">
+      </app-ad-slot>
+    </div>
