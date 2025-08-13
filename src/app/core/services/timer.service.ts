@@ -2,6 +2,7 @@ import { Injectable, signal, computed, effect, inject, untracked, DestroyRef } f
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NotificationsService } from './notifications.service';
+import { StorageService } from './storage.service';
 import { BackgroundTimerService } from './background-timer.service';
 import { BackgroundSyncService } from './background-sync.service';
 import { TimerApiService } from './timer-api.service';
@@ -128,6 +129,7 @@ export interface PresentationTimerState {
 })
 export class TimerService {
   private readonly notificationsService = inject(NotificationsService);
+  private readonly storageService = inject(StorageService);
   private readonly backgroundTimerService = inject(BackgroundTimerService);
   private readonly backgroundSyncService = inject(BackgroundSyncService);
   private readonly timerApiService = inject(TimerApiService);
@@ -986,6 +988,12 @@ export class TimerService {
             completedAt: new Date()
           }]
         }));
+        // Record completed work session in history
+        this.storageService.addHistoryEntry({
+          type: 'pomodoro',
+          duration: state.workTime,
+          completed: true
+        });
         
         // Send notification for work phase completion
         this.notificationsService.sendPomodoroCompletion('work');
@@ -1006,6 +1014,12 @@ export class TimerService {
               completedAt: new Date()
             }]
           }));
+          // Record final break completion
+          this.storageService.addHistoryEntry({
+            type: 'pomodoro',
+            duration: state.currentSessionType === 'longBreak' ? state.longBreakTime : state.shortBreakTime,
+            completed: true
+          });
           
           // Send notification when pomodoro timer completes
           this.notificationsService.sendTimerCompletion('Pomodoro');
@@ -1027,6 +1041,12 @@ export class TimerService {
               completedAt: new Date()
             }]
           }));
+          // Record completed break session in history
+          this.storageService.addHistoryEntry({
+            type: 'pomodoro',
+            duration: state.currentSessionType === 'longBreak' ? state.longBreakTime : state.shortBreakTime,
+            completed: true
+          });
         }
       }
     } else {

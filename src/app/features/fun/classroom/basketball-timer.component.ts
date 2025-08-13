@@ -17,6 +17,7 @@ import { AnalyticsService } from '../../../core/services/analytics.service';
 import { SeoService } from '../../../core/services/seo.service';
 import { TimerService } from '../../../core/services/timer.service';
 import { BackgroundTimerService } from '../../../core/services/background-timer.service';
+import { StorageService } from '../../../core/services/storage.service';
 
 @Component({
   selector: 'app-basketball-timer',
@@ -50,6 +51,7 @@ export class BasketballTimerComponent implements OnInit, OnDestroy {
   analyticsService = inject(AnalyticsService);
   timerService = inject(TimerService);
   backgroundTimerService = inject(BackgroundTimerService);
+  storageService = inject(StorageService);
 
   // Use centralized state from TimerService
   basketballTimerState = this.timerService.basketballTimerState;
@@ -238,6 +240,13 @@ export class BasketballTimerComponent implements OnInit, OnDestroy {
     // Track period completion
     const durationSeconds = Math.ceil(this.periodDuration() / 1000);
     this.analyticsService.trackTimerComplete('basketball-timer-period-end', durationSeconds);
+    
+    // Save to history for stats
+    this.storageService.addHistoryEntry({
+      type: 'basketball-timer',
+      duration: this.periodDuration(),
+      completed: true
+    });
     
     // Show period end notification
     this.snackBar.open(`🏀 Period ${this.currentPeriod()} ended!`, 'Next', {

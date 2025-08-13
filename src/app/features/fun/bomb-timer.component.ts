@@ -11,6 +11,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AudioService } from '../../core/services/audio.service';
+import { StorageService } from '../../core/services/storage.service';
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
@@ -48,6 +49,7 @@ export class BombTimerComponent implements OnInit, OnDestroy {
   seoService = inject(SeoService);
   timerService = inject(TimerService);
   backgroundTimerService = inject(BackgroundTimerService);
+  storageService = inject(StorageService);
 
   // Use centralized state from TimerService
   bombTimerState = this.timerService.bombTimerState;
@@ -317,6 +319,14 @@ export class BombTimerComponent implements OnInit, OnDestroy {
     const durationSeconds = Math.ceil(this.initialTime() / 1000);
     this.analyticsService.trackTimerComplete('bomb-timer-explode', durationSeconds);
     
+    // Save to history for stats (exploded)
+    this.timerService.stopBombTimer();
+    this.storageService.addHistoryEntry({
+      type: 'bomb-timer',
+      duration: this.initialTime(),
+      completed: false
+    });
+    
     // Show explosion notification
     this.snackBar.open('💥 BOOM! The bomb exploded!', 'Try Again', {
       duration: 10000,
@@ -333,6 +343,15 @@ export class BombTimerComponent implements OnInit, OnDestroy {
       duration: 5000,
       horizontalPosition: 'center',
       verticalPosition: 'top'
+    });
+    
+    // Save to history for stats (defused)
+    this.timerService.stopBombTimer();
+    const usedMs = Math.max(0, this.initialTime() - this.timeRemaining());
+    this.storageService.addHistoryEntry({
+      type: 'bomb-timer',
+      duration: usedMs,
+      completed: true
     });
   }
 }

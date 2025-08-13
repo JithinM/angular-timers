@@ -245,6 +245,13 @@ export class EggTimerComponent implements OnInit, OnDestroy {
     const durationSeconds = Math.floor(this.initialTime() / 1000);
     this.analyticsService.trackTimerComplete('egg-timer', durationSeconds);
     
+    // Save to history for stats
+    this.storageService.addHistoryEntry({
+      type: 'egg-timer',
+      duration: this.initialTime(),
+      completed: true
+    });
+    
     // Show completion notification
     this.snackBar.open('🥚 Your eggs are ready!', 'Enjoy', {
       duration: 10000,

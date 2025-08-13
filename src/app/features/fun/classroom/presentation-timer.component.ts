@@ -19,6 +19,7 @@ import { AnalyticsService } from '../../../core/services/analytics.service';
 import { SeoService } from '../../../core/services/seo.service';
 import { TimerService } from '../../../core/services/timer.service';
 import { BackgroundTimerService } from '../../../core/services/background-timer.service';
+import { StorageService } from '../../../core/services/storage.service';
 
 interface PresentationSegment {
   id: string;
@@ -62,6 +63,7 @@ export class PresentationTimerComponent implements OnInit, OnDestroy {
   analyticsService = inject(AnalyticsService);
   timerService = inject(TimerService);
   backgroundTimerService = inject(BackgroundTimerService);
+  storageService = inject(StorageService);
 
   // Use centralized state from TimerService
   presentationTimerState = this.timerService.presentationTimerState;
@@ -339,6 +341,13 @@ export class PresentationTimerComponent implements OnInit, OnDestroy {
     const segment = this.currentSegment();
     if (segment) {
       this.analyticsService.trackTimerComplete('presentation-timer-segment-end', segment.duration);
+      
+      // Save to history for stats (per segment)
+      this.storageService.addHistoryEntry({
+        type: 'presentation-timer',
+        duration: segment.duration * 1000,
+        completed: true
+      });
       
       // Show segment end notification
       this.snackBar.open(`📋 "${segment.title}" completed!`, 'Next', {

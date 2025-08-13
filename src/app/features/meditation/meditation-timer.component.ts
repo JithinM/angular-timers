@@ -16,6 +16,7 @@ import { AudioService } from '../../core/services/audio.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { SeoService } from '../../core/services/seo.service';
 import { BackgroundTimerService } from '../../core/services/background-timer.service';
+import { StorageService } from '../../core/services/storage.service';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
 
 @Component({
@@ -47,6 +48,7 @@ export class MeditationTimerComponent implements OnDestroy {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly seoService = inject(SeoService);
   private readonly backgroundTimerService = inject(BackgroundTimerService);
+  private readonly storageService = inject(StorageService);
 
   // Configuration signals
   readonly breatheInDuration = signal(4); // 4 seconds
@@ -206,6 +208,13 @@ export class MeditationTimerComponent implements OnDestroy {
     // Track timer completion
     const totalDuration = (this.breatheInDuration() + this.breatheOutDuration()) * this.totalCycles();
     this.analyticsService.trackTimerComplete('meditation-timer', totalDuration);
+    
+    // Save to history for stats
+    this.storageService.addHistoryEntry({
+      type: 'meditation-timer',
+      duration: totalDuration * 1000,
+      completed: true
+    });
   }
 
   // Format time for display (MM:SS.ms)

@@ -17,6 +17,7 @@ import { BackgroundTimerService } from '../../core/services/background-timer.ser
 import { TimeDisplayComponent } from '../../shared/components/time-display/time-display.component';
 import { ControlButtonsComponent } from '../../shared/components/control-buttons/control-buttons.component';
 import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.component';
+import { AnalyticsService } from '../../core/services/analytics.service';
 
 interface PomodoroPreset {
   name: string;
@@ -54,6 +55,7 @@ export class PomodoroComponent implements OnDestroy {
   private storageService = inject(StorageService);
   private audioService = inject(AudioService);
   private bgTimer = inject(BackgroundTimerService);
+  private analyticsService = inject(AnalyticsService);
   private destroyRef = inject(DestroyRef);
 
   // Component state
@@ -283,6 +285,10 @@ export class PomodoroComponent implements OnDestroy {
 
   private startPomodoro(): void {
     this.timerService.startPomodoroTimer();
+    // Track start
+    const state = this.pomodoroState();
+    const seconds = Math.round(state.workTime / 1000);
+    this.analyticsService.trackTimerStart('pomodoro', seconds);
     // Save timer state for background persistence
     this.timerService.saveTimerStates();
   }

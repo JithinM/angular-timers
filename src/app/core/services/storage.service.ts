@@ -15,7 +15,17 @@ export interface TimerPreferences {
 
 export interface TimerHistoryEntry {
   id: string;
-  type: 'stopwatch' | 'countdown' | 'interval';
+  type:
+    | 'stopwatch'
+    | 'countdown'
+    | 'interval'
+    | 'egg-timer'
+    | 'bomb-timer'
+    | 'meditation-timer'
+    | 'pomodoro'
+    | 'basketball-timer'
+    | 'hockey-timer'
+    | 'presentation-timer';
   duration: number;
   timestamp: Date;
   completed: boolean;

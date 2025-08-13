@@ -516,11 +516,19 @@ export class StatsComponent implements OnInit {
       case 'stopwatch': return 'timer';
       case 'countdown': return 'hourglass_empty';
       case 'interval': return 'fitness_center';
+      case 'pomodoro': return 'work';
+      case 'egg-timer': return 'egg';
+      case 'bomb-timer': return 'warning';
+      case 'meditation-timer': return 'self_improvement';
+      case 'basketball-timer': return 'sports_basketball';
+      case 'hockey-timer': return 'sports_hockey';
+      case 'presentation-timer': return 'slideshow';
       default: return 'timer';
     }
   }
 
   formatDuration(milliseconds: number): string {
+    if (!milliseconds || milliseconds <= 0) return '0s';
     const totalSeconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
