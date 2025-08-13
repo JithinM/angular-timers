@@ -4,8 +4,8 @@ staticPort: 1668
 reloadPort: 2667
 hostName: localhost
 projectName: angular-timers
-homeFolder: /Users/jithinswathi/GitHub/tool-app/angular-timers
+homeFolder: C:\DEVELOPMENT\sources\Github\angular-timers
 distFolder: ./dist/angular-timers/browser
-outDir: /Users/jithinswathi/GitHub/tool-app/angular-timers/dist/static
+outDir: C:\DEVELOPMENT\sources\Github\angular-timers\dist\static
 handle404: ''
 allowErrorCollect: false
