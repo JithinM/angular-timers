@@ -1770,15 +1770,26 @@ export class TimerService {
     }
 
     // Restore pomodoro state
-    if (states.pomodoro?.isRunning) {
-      const newTimeRemaining = Math.max(0, states.pomodoro.timeRemaining - timeElapsed);
-      this._pomodoroState.update(state => ({
-        ...state,
+    if (states.pomodoro) {
+      const restoredPomodoro = {
         ...states.pomodoro,
-        timeRemaining: newTimeRemaining
-      }));
-    } else if (states.pomodoro) {
-      this._pomodoroState.set(states.pomodoro);
+        sessionHistory: (states.pomodoro.sessionHistory || []).map((entry: any) => ({
+          ...entry,
+          // Ensure completedAt is a Date instance after JSON deserialization
+          completedAt: new Date(entry.completedAt)
+        }))
+      };
+
+      if (states.pomodoro.isRunning) {
+        const newTimeRemaining = Math.max(0, states.pomodoro.timeRemaining - timeElapsed);
+        this._pomodoroState.update(state => ({
+          ...state,
+          ...restoredPomodoro,
+          timeRemaining: newTimeRemaining
+        }));
+      } else {
+        this._pomodoroState.set(restoredPomodoro);
+      }
     }
 
     // Restore egg timer state

@@ -413,7 +413,7 @@ export class PomodoroComponent implements OnDestroy {
       type: session.type === 'work' ? 'Focus' : 
             session.type === 'shortBreak' ? 'Short Break' : 'Long Break',
       duration: this.formatDuration(session.duration),
-      completedAt: session.completedAt.toLocaleTimeString()
+      completedAt: new Date(session.completedAt as any).toLocaleTimeString()
     }));
   }
 
