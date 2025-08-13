@@ -4,7 +4,7 @@
       padding: 1rem;
       min-height: 100vh;
       background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
-      color: white;
+      color: black;
     }
 
     .basketball-timer-container.fullscreen {
@@ -301,7 +301,7 @@
     .setup-controls {
       display: flex;
       gap: 1rem;
-      align-items: end;
+      align-items: baseline;
       flex-wrap: wrap;
       margin-bottom: 1rem;
     }
@@ -350,6 +350,10 @@
       gap: 0.5rem;
     }
 
+    .team-name-field {
+      width: 160px;
+    }
+
     .team-name {
       font-weight: 500;
       font-size: 1.125rem;
@@ -361,11 +365,34 @@
       gap: 1rem;
     }
 
+    /* Match hockey penalty-controls button styling */
+    .score-controls button {
+      color: #0d47a1;
+      background-color: #ffffff;
+      border: 2px solid #ffeb3b;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .score-controls button mat-icon {
+      color: #0d47a1;
+    }
+
+    .score-controls button:hover {
+      background-color: #ffeb3b;
+      color: #0d47a1;
+      border-color: #ffeb3b;
+    }
+
+    .score-controls button:hover mat-icon {
+      color: #0d47a1;
+    }
+
     .score {
       font-size: 2rem;
       font-weight: bold;
       min-width: 60px;
       text-align: center;
+      color: #f44336; /* match hockey .penalty-count */
     }
 
     .vs-divider {

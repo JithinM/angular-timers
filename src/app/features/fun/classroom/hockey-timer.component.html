@@ -200,7 +200,10 @@
           <mat-card-content>
             <div class="penalty-display">
               <div class="team-penalties">
-                <span class="team-name">Home</span>
+                <mat-form-field appearance="fill" class="team-name-field">
+                  <mat-label>Home Team</mat-label>
+                  <input matInput [(ngModel)]="homeTeamName" maxlength="20" />
+                </mat-form-field>
                 <div class="penalty-controls">
                   <button mat-icon-button (click)="removePenalty('home')">
                     <mat-icon>remove</mat-icon>
@@ -215,7 +218,10 @@
               <div class="vs-divider">VS</div>
               
               <div class="team-penalties">
-                <span class="team-name">Away</span>
+                <mat-form-field appearance="fill" class="team-name-field">
+                  <mat-label>Away Team</mat-label>
+                  <input matInput [(ngModel)]="awayTeamName" maxlength="20" />
+                </mat-form-field>
                 <div class="penalty-controls">
                   <button mat-icon-button (click)="removePenalty('away')">
                     <mat-icon>remove</mat-icon>

@@ -152,7 +152,7 @@
     .segment-form {
       display: flex;
       gap: 1rem;
-      align-items: end;
+      align-items: baseline;
       flex-wrap: wrap;
       margin-bottom: 1rem;
     }
@@ -184,6 +184,23 @@
       width: 100%;
     }
 
+    .drag-handle {
+      cursor: grab;
+      display: inline-flex;
+      align-items: center;
+      color: #e1bee7;
+    }
+
+    .segment-title-input {
+      flex: 1;
+      min-width: 120px;
+      background: #ffffff;
+      border: 1px solid #e1bee7;
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: #1a1a1a;
+    }
+
     .segment-number {
       font-weight: bold;
       min-width: 20px;
@@ -199,11 +216,41 @@
       text-align: right;
     }
 
+    .segment-duration-input {
+      width: 90px;
+      background: #ffffff;
+      border: 1px solid #e1bee7;
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: #1a1a1a;
+      text-align: right;
+    }
+
     .segment-actions {
       display: flex;
       gap: 1rem;
       justify-content: center;
       margin-top: 1rem;
+    }
+
+    /* Ensure Presentation Tips card has sufficient contrast */
+    .tips-section {
+      margin-bottom: 2rem;
+    }
+
+    .tips-section mat-card {
+      background: #7b1fa2;
+      border-radius: 16px;
+      border: 1px solid #9c27b0;
+      color: #ffffff;
+    }
+
+    .tips-section mat-card-title {
+      color: #e1bee7;
+    }
+
+    .tips-section mat-card-title mat-icon {
+      color: #e1bee7;
     }
 
     .tips-section ul {

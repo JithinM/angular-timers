@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, signal, computed, effect, inject } from '@angular/core';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,6 +42,7 @@ interface PresentationSegment {
     MatSnackBarModule,
     MatTooltipModule,
     MatListModule,
+    DragDropModule,
     TimeDisplayComponent,
     AdSlotComponent
   ],
@@ -50,6 +52,9 @@ interface PresentationSegment {
 export class PresentationTimerComponent implements OnInit, OnDestroy {
   newSegmentTitle = '';
   newSegmentDuration = 5; // minutes
+  editingSegmentIndex: number | null = null;
+  editingTitle: string = '';
+  editingDurationMinutes: number = 1;
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
@@ -199,6 +204,49 @@ export class PresentationTimerComponent implements OnInit, OnDestroy {
     if (index === this.currentSegmentIndex() && updatedSegments.length > 0) {
       this.resetTimer();
     }
+  }
+
+  // Drag and drop reordering
+  onDrop(event: CdkDragDrop<PresentationSegment[]>): void {
+    if (this.isRunning()) return;
+    const currentSegments = [...this.segments()];
+    moveItemInArray(currentSegments, event.previousIndex, event.currentIndex);
+    this.timerService.setupPresentationTimer(currentSegments);
+    this.timerService.saveTimerStates();
+  }
+
+  // Inline editing helpers
+  private beginEdit(index: number): void {
+    if (this.isRunning()) return;
+    const seg = this.segments()[index];
+    this.editingSegmentIndex = index;
+    this.editingTitle = seg?.title ?? '';
+    this.editingDurationMinutes = Math.max(1, Number((((seg?.duration ?? 60) / 60)).toFixed(2)));
+  }
+
+  // Start editing from title or duration interactions
+  startEditTitle(index: number): void { this.beginEdit(index); }
+  startEditDuration(index: number): void { this.beginEdit(index); }
+
+  private commitEditSegment(index: number): void {
+    if (this.editingSegmentIndex === null) return;
+    const trimmedTitle = (this.editingTitle || '').trim();
+    if (!trimmedTitle) { this.cancelEditTitle(); return; }
+    const minutes = isNaN(this.editingDurationMinutes) ? 1 : Math.max(1, Number(this.editingDurationMinutes));
+    const currentSegments = this.segments();
+    const updatedSegments = currentSegments.map((seg, i) => i === index ? { ...seg, title: trimmedTitle, duration: Math.round(minutes * 60) } : seg);
+    this.timerService.setupPresentationTimer(updatedSegments);
+    this.timerService.saveTimerStates();
+    this.cancelEditTitle();
+  }
+
+  commitEditTitle(index: number): void { this.commitEditSegment(index); }
+  commitEditDuration(index: number): void { this.commitEditSegment(index); }
+
+  cancelEditTitle(): void {
+    this.editingSegmentIndex = null;
+    this.editingTitle = '';
+    this.editingDurationMinutes = 1;
   }
 
   clearSegments(): void {

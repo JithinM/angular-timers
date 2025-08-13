@@ -41,6 +41,8 @@ import { BackgroundTimerService } from '../../../core/services/background-timer.
 export class BasketballTimerComponent implements OnInit, OnDestroy {
   periodMinutes = 12;
   setupPeriods = 4;
+  homeTeamName: string = 'Home';
+  awayTeamName: string = 'Away';
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);
@@ -283,9 +285,9 @@ export class BasketballTimerComponent implements OnInit, OnDestroy {
     let result = '';
     
     if (home > away) {
-      result = 'Home team wins!';
+      result = `${this.homeTeamName} wins!`;
     } else if (away > home) {
-      result = 'Away team wins!';
+      result = `${this.awayTeamName} wins!`;
     } else {
       result = 'It\'s a tie!';
     }
@@ -293,7 +295,7 @@ export class BasketballTimerComponent implements OnInit, OnDestroy {
     // Track game end
     this.analyticsService.trackTimerComplete('basketball-timer-game-end', 0);
     
-    this.snackBar.open(`🏆 ${result} Final Score: Home ${home} - ${away} Away`, 'Play Again', {
+    this.snackBar.open(`🏆 ${result} Final Score: ${this.homeTeamName} ${home} - ${away} ${this.awayTeamName}`, 'Play Again', {
       duration: 15000,
       horizontalPosition: 'center',
       verticalPosition: 'top'

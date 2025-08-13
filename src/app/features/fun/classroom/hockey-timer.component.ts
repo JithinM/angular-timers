@@ -41,6 +41,8 @@ import { BackgroundTimerService } from '../../../core/services/background-timer.
 export class HockeyTimerComponent implements OnInit, OnDestroy {
   periodMinutes = 15;
   setupPeriods = 3;
+  homeTeamName: string = 'Home';
+  awayTeamName: string = 'Away';
 
   audioService = inject(AudioService);
   snackBar = inject(MatSnackBar);

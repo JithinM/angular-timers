@@ -142,17 +142,51 @@
             </button>
           </div>
           
-          <div class="segments-list">
+          <div class="segments-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
             <mat-list>
               <mat-list-item 
-                *ngFor="let segment of segments(); let i = index; let first = first; let last = last"
+                *ngFor="let segment of segments(); let i = index"
                 class="segment-item"
                 [class.active]="currentSegmentIndex() === i"
-                [class.completed]="segment.completed">
+                [class.completed]="segment.completed"
+                cdkDrag>
                 <div class="segment-content">
+                  <span class="drag-handle" cdkDragHandle>
+                    <mat-icon>drag_indicator</mat-icon>
+                  </span>
                   <span class="segment-number">{{ i + 1 }}.</span>
-                  <span class="segment-title">{{ segment.title }}</span>
-                  <span class="segment-duration">{{ formatDuration(segment.duration) }}</span>
+                  <ng-container *ngIf="editingSegmentIndex !== i; else editTitleTpl">
+                    <span class="segment-title" (dblclick)="startEditTitle(i)">{{ segment.title }}</span>
+                  </ng-container>
+                  <ng-template #editTitleTpl>
+                    <input 
+                      matInput 
+                      class="segment-title-input"
+                      [(ngModel)]="editingTitle"
+                      (blur)="commitEditTitle(i)"
+                      (keydown.enter)="commitEditTitle(i)"
+                      (keydown.escape)="cancelEditTitle()"
+                      [disabled]="isRunning()"
+                    />
+                  </ng-template>
+                  <ng-container *ngIf="editingSegmentIndex !== i; else editDurationTpl">
+                    <span class="segment-duration" (dblclick)="startEditDuration(i)">{{ formatDuration(segment.duration) }}</span>
+                  </ng-container>
+                  <ng-template #editDurationTpl>
+                    <input 
+                      matInput 
+                      class="segment-duration-input"
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      max="120"
+                      [(ngModel)]="editingDurationMinutes"
+                      (blur)="commitEditDuration(i)"
+                      (keydown.enter)="commitEditDuration(i)"
+                      (keydown.escape)="cancelEditTitle()"
+                      [disabled]="isRunning()"
+                    />
+                  </ng-template>
                   <button 
                     mat-icon-button 
                     (click)="removeSegment(i)"

@@ -194,7 +194,10 @@
           <mat-card-content>
             <div class="score-display">
               <div class="team-score">
-                <span class="team-name">Home</span>
+                <mat-form-field appearance="fill" class="team-name-field">
+                  <mat-label>Home Team</mat-label>
+                  <input matInput [(ngModel)]="homeTeamName" maxlength="20" />
+                </mat-form-field>
                 <div class="score-controls">
                   <button mat-icon-button (click)="decreaseScore('home')">
                     <mat-icon>remove</mat-icon>
@@ -209,7 +212,10 @@
               <div class="vs-divider">VS</div>
               
               <div class="team-score">
-                <span class="team-name">Away</span>
+                <mat-form-field appearance="fill" class="team-name-field">
+                  <mat-label>Away Team</mat-label>
+                  <input matInput [(ngModel)]="awayTeamName" maxlength="20" />
+                </mat-form-field>
                 <div class="score-controls">
                   <button mat-icon-button (click)="decreaseScore('away')">
                     <mat-icon>remove</mat-icon>
