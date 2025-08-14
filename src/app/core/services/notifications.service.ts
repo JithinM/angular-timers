@@ -47,8 +47,8 @@ export class NotificationsService {
       return;
     }
 
-    // Enhanced notification options for better background support
-    const notificationOptions: any = {
+    // Base notification options
+    const baseOptions: any = {
       body: options?.body || 'Timer completed!',
       icon: options?.icon || '/assets/icons/icon-192x192.png',
       badge: options?.badge || '/assets/icons/icon-72x72.png',
@@ -58,35 +58,51 @@ export class NotificationsService {
       tag: options?.tag || 'timer-notification', // Replace previous notifications
       renotify: true, // Show notification even if tag exists
       timestamp: Date.now(),
-      actions: [
-        {
-          action: 'dismiss',
-          title: 'Dismiss'
-        },
-        {
-          action: 'view',
-          title: 'View Timer'
-        }
-      ],
       ...options
     };
 
-    // Send notification
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      const notification = new Notification(title, notificationOptions);
-      
-      // Handle notification click events
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-
-      // Auto-close after 10 seconds if not requiring interaction
-      if (!notificationOptions.requireInteraction) {
-        setTimeout(() => {
-          notification.close();
-        }, 10000);
+    // Prefer Service Worker notifications when available (supports actions)
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        navigator.serviceWorker.ready.then(reg => {
+          // Include actions only for SW notifications
+          const swOptions = {
+            actions: [
+              { action: 'dismiss', title: 'Dismiss' },
+              { action: 'view', title: 'View Timer' }
+            ],
+            ...baseOptions
+          } as NotificationOptions;
+          reg.showNotification(title, swOptions);
+        }).catch(() => {
+          // Fallback to window Notification without actions
+          this.showWindowNotification(title, baseOptions);
+        });
+        return;
+      } catch {
+        // Continue to fallback
       }
+    }
+
+    // Fallback to window Notification API (no actions supported)
+    this.showWindowNotification(title, baseOptions);
+  }
+
+  private showWindowNotification(title: string, options: NotificationOptions): void {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    // Ensure no actions field is present to avoid constructor errors
+    const { actions, ...opts } = options as any;
+    const notification = new Notification(title, opts);
+
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+
+    if (!(opts as any).requireInteraction) {
+      setTimeout(() => {
+        notification.close();
+      }, 10000);
     }
   }
 

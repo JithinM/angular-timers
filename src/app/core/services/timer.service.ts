@@ -254,6 +254,7 @@ export class TimerService {
 
   // Interval reference for timer updates
   private intervalId: number | null = null;
+  private lastUpdateTimestamp: number | null = null;
 
   // Public readonly signals
   readonly stopwatchState = this._stopwatchState.asReadonly();
@@ -348,11 +349,12 @@ export class TimerService {
       this.handleStoreTimerUpdates(runningTimers);
     });
 
-    // Setup visibility change handler to restore timer states when tab becomes visible
+    // Setup visibility change handler to save on hide and restore on show
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-          // Tab became visible, restore timer states
+        if (document.hidden) {
+          this.saveTimerStates();
+        } else {
           this.restoreTimerStates();
         }
       });
@@ -783,11 +785,11 @@ export class TimerService {
     }
   }
 
-  private updateIntervalTimer(): void {
+  private updateIntervalTimer(deltaMs: number): void {
     const state = this._intervalState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       // Phase completed
@@ -963,11 +965,11 @@ export class TimerService {
     }
   }
 
-  private updatePomodoroTimer(): void {
+  private updatePomodoroTimer(deltaMs: number): void {
     const state = this._pomodoroState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       // Session completed
@@ -1449,6 +1451,7 @@ export class TimerService {
   private startInterval(): void {
     if (this.intervalId) return;
     
+    this.lastUpdateTimestamp = Date.now();
     this.intervalId = window.setInterval(() => {
       this.updateTimers();
     }, 10); // Update every 10ms for smooth display
@@ -1459,9 +1462,13 @@ export class TimerService {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    this.lastUpdateTimestamp = null;
   }
 
   private updateTimers(): void {
+    const now = Date.now();
+    const deltaMs = this.lastUpdateTimestamp ? now - this.lastUpdateTimestamp : 10;
+    this.lastUpdateTimestamp = now;
     // Update stopwatch
     const stopwatchState = this._stopwatchState();
     if (stopwatchState.isRunning && stopwatchState.startTime) {
@@ -1475,7 +1482,7 @@ export class TimerService {
     // Update countdown
     const countdownState = this._countdownState();
     if (countdownState.isRunning) {
-      const newRemaining = Math.max(0, countdownState.timeRemaining - 10);
+      const newRemaining = Math.max(0, countdownState.timeRemaining - deltaMs);
       
       this._countdownState.update(state => ({
         ...state,
@@ -1491,35 +1498,35 @@ export class TimerService {
     }
 
     // Update interval timer
-    this.updateIntervalTimer();
+    this.updateIntervalTimer(deltaMs);
 
     // Update pomodoro timer
-    this.updatePomodoroTimer();
+    this.updatePomodoroTimer(deltaMs);
 
     // Update egg timer
-    this.updateEggTimer();
+    this.updateEggTimer(deltaMs);
 
     // Update bomb timer
-    this.updateBombTimer();
+    this.updateBombTimer(deltaMs);
 
     // Update meditation timer
-    this.updateMeditationTimer();
+    this.updateMeditationTimer(deltaMs);
 
     // Update basketball timer
-    this.updateBasketballTimer();
+    this.updateBasketballTimer(deltaMs);
 
     // Update hockey timer
-    this.updateHockeyTimer();
+    this.updateHockeyTimer(deltaMs);
 
     // Update presentation timer
-    this.updatePresentationTimer();
+    this.updatePresentationTimer(deltaMs);
   }
 
-  private updateEggTimer(): void {
+  private updateEggTimer(deltaMs: number): void {
     const state = this._eggTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       this._eggTimerState.update(current => ({
@@ -1537,11 +1544,11 @@ export class TimerService {
     }
   }
 
-  private updateBombTimer(): void {
+  private updateBombTimer(deltaMs: number): void {
     const state = this._bombTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       this._bombTimerState.update(current => ({
@@ -1559,11 +1566,11 @@ export class TimerService {
     }
   }
 
-  private updateMeditationTimer(): void {
+  private updateMeditationTimer(deltaMs: number): void {
     const state = this._meditationTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       // Phase completed
@@ -1601,11 +1608,11 @@ export class TimerService {
     }
   }
 
-  private updateBasketballTimer(): void {
+  private updateBasketballTimer(deltaMs: number): void {
     const state = this._basketballTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       this._basketballTimerState.update(current => ({
@@ -1622,11 +1629,11 @@ export class TimerService {
     }
   }
 
-  private updateHockeyTimer(): void {
+  private updateHockeyTimer(deltaMs: number): void {
     const state = this._hockeyTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       this._hockeyTimerState.update(current => ({
@@ -1643,11 +1650,11 @@ export class TimerService {
     }
   }
 
-  private updatePresentationTimer(): void {
+  private updatePresentationTimer(deltaMs: number): void {
     const state = this._presentationTimerState();
     if (!state.isRunning) return;
 
-    const newRemaining = Math.max(0, state.timeRemaining - 10);
+    const newRemaining = Math.max(0, state.timeRemaining - deltaMs);
     
     if (newRemaining === 0) {
       // Segment completed
