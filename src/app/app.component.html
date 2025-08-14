@@ -101,24 +101,25 @@
           </div>
         </div>
         
-        <a routerLink="/settings"
+        <!-- <a routerLink="/settings"
            class="nav-link"
            [class.disabled]="!settingsMenuEnabled"
            (click)="settingsMenuEnabled || $event.preventDefault()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
-        </a>
+        </a> -->
+        <div class="nav-actions">
+          <button mat-icon-button (click)="toggleAudio()" [attr.aria-label]="audioService.settings().enabled ? 'Disable audio' : 'Enable audio'">
+            <mat-icon>{{ audioService.settings().enabled ? 'volume_up' : 'volume_off' }}</mat-icon>
+          </button>
+          
+          <button mat-icon-button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [attr.aria-label]="'Toggle navigation menu'">
+            <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
+          </button>
+        </div>
       </div>
       
-      <div class="nav-actions">
-        <button mat-icon-button (click)="toggleAudio()" [attr.aria-label]="audioService.settings().enabled ? 'Disable audio' : 'Enable audio'">
-          <mat-icon>{{ audioService.settings().enabled ? 'volume_up' : 'volume_off' }}</mat-icon>
-        </button>
-        
-        <button mat-icon-button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [attr.aria-label]="'Toggle navigation menu'">
-          <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
-        </button>
-      </div>
+     
     </nav>
   </header>
   
