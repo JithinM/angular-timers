@@ -154,9 +154,12 @@ export class CountdownComponent implements OnInit, OnDestroy {
       this.enterFullscreen();
     }
 
-    // Check if there's an existing timer
-    if (this.timerState().timeRemaining > 0) {
+    // Show setup by default unless a timer is actively running or paused
+    const state = this.timerState();
+    if (state.isRunning || state.isPaused) {
       this.showSetup.set(false);
+    } else {
+      this.showSetup.set(true);
     }
   }
 
