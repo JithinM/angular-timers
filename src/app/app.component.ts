@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, computed } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +11,7 @@ import { PwaUpdateComponent } from './shared/components/pwa-update/pwa-update.co
 import { PwaService } from './core/services/pwa.service';
 import { SeoService } from './core/services/seo.service';
 import { BuildInfoService } from './core/services/build-info.service';
+import { StorageService } from './core/services/storage.service';
 
 @Component({
   selector: 'app-root',
@@ -36,11 +37,15 @@ export class AppComponent implements OnInit {
   settingsMenuEnabled = false; // Disable Settings menu
   buildInfo = '';
 
+  // Whether ads are enabled (not disabled in preferences)
+  public adsEnabled = computed(() => !this.storageService.preferences().adsDisabled);
+
   constructor(
     public audioService: AudioService,
     private pwaService: PwaService,
     private seoService: SeoService,
     private buildInfoService: BuildInfoService,
+    private storageService: StorageService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 

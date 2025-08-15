@@ -112,13 +112,13 @@
           <button mat-icon-button (click)="toggleAudio()" [attr.aria-label]="audioService.settings().enabled ? 'Disable audio' : 'Enable audio'">
             <mat-icon>{{ audioService.settings().enabled ? 'volume_up' : 'volume_off' }}</mat-icon>
           </button>
-          
-          <button mat-icon-button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [attr.aria-label]="'Toggle navigation menu'">
-            <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
-          </button>
         </div>
       </div>
-      
+      <div class="nav-actions">
+        <button mat-icon-button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [attr.aria-label]="'Toggle navigation menu'">
+          <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      </div>
      
     </nav>
   </header>
@@ -139,7 +139,7 @@
     </main>
     
     <!-- Right Sidebar for Ads -->
-    <aside class="ads-sidebar">
+    <aside class="ads-sidebar" *ngIf="adsEnabled()">
       <div class="sidebar-content">
         <!-- Primary Skyscraper Ad -->
         <app-ad-slot
