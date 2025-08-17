@@ -45,3 +45,10 @@ scully.log
 .scully/settings.yml
 scully.log
 .scully/settings.yml
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/screenshots/
+/traces/
