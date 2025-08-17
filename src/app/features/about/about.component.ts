@@ -309,10 +309,10 @@ import { AdSlotComponent } from '../../shared/components/ad-slot/ad-slot.compone
 })
 export class AboutComponent {
   openGitHub(): void {
-    window.open('https://github.com/your-repo/timer-tools', '_blank');
+    window.open('https://github.com/JithinM/angular-timers', '_blank');
   }
 
   sendEmail(): void {
-    window.location.href = 'mailto:feedback@timertools.com?subject=TimerTools%20Feedback';
+    window.location.href = 'mailto:timersandtools@gmail.com?subject=TimerTools%20Feedback';
   }
 }
